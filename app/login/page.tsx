@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [isSignup, setIsSignup] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [formError, setFormError] = useState("");
   const [email, setEmail] = useState("customer@canteen.com");
   const [password, setPassword] = useState("password123");
   const [isLoading, setIsLoading] = useState(false);
@@ -74,6 +75,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setFormError("");
 
     try {
       if (isSignup) {
@@ -102,6 +104,7 @@ export default function LoginPage() {
     } catch (err: any) {
       if (isSignup) {
         showToast(err.message || "Could not create your account.");
+        setFormError(err.message || "Could not create your account.");
         return;
       }
       console.error("[Login] Backend auth failed:", err);
@@ -242,15 +245,24 @@ export default function LoginPage() {
               isSignup ? "Create Customer Account" : `Sign In as ${selectedRole.toUpperCase()}`
             )}
           </button>
+          {formError && (
+            <p className="text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+              {formError}
+            </p>
+          )}
         </form>
 
         <button
           type="button"
           onClick={() => {
-            setIsSignup(!isSignup);
+            const nextIsSignup = !isSignup;
+            setIsSignup(nextIsSignup);
             setSelectedRole("customer");
-            setEmail("customer@canteen.com");
-            setPassword("password123");
+            setName("");
+            setPhone("");
+            setFormError("");
+            setEmail(nextIsSignup ? "" : "customer@canteen.com");
+            setPassword(nextIsSignup ? "" : "password123");
           }}
           className="text-xs font-bold text-orange-600 hover:text-orange-700"
         >
