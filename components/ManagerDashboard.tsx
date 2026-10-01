@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useApp } from "../app/context/AppContext";
+import { MenuItem } from "../app/types";
 
 export const ManagerDashboard: React.FC = () => {
   const {
@@ -9,16 +10,41 @@ export const ManagerDashboard: React.FC = () => {
     stats,
     aiInsights,
     slots,
+    saveMenuItem,
+    deleteMenuItem,
     updateItemStock,
     showToast,
   } = useApp();
 
-  const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
-  const [tempPrice, setTempPrice] = useState<number>(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<Partial<MenuItem> | null>(null);
 
-  const handlePriceSave = (itemId: string) => {
-    showToast(`Updated menu price to $${tempPrice.toFixed(2)}`);
-    setEditingPriceId(null);
+  const handleOpenAddModal = () => {
+    setEditingItem({
+      name: "",
+      category: "Burgers",
+      price: 4.5,
+      availableQuantity: 15,
+      preparationTime: 8,
+      status: "Available",
+      description: "",
+      image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80",
+      isVegetarian: false,
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (item: MenuItem) => {
+    setEditingItem({ ...item });
+    setIsModalOpen(true);
+  };
+
+  const handleSaveModal = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingItem) {
+      saveMenuItem(editingItem);
+      setIsModalOpen(false);
+    }
   };
 
   return (
@@ -37,13 +63,19 @@ export const ManagerDashboard: React.FC = () => {
                 Canteen Manager Operations & Analytics
               </h1>
               <span className="text-xs text-slate-400">
-                Live Sales, Inventory Controls & AI Demand Predictions
+                Live Sales, Menu Item Editors, Inventory Controls & AI Demand Predictions
               </span>
             </div>
           </div>
-          <span className="text-xs font-bold bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full border border-blue-500/30 self-start md:self-auto">
-            Peak Rush Window: 1:00 PM – 1:30 PM
-          </span>
+          <button
+            onClick={handleOpenAddModal}
+            className="px-4 py-2.5 bg-orange-600 hover:bg-orange-500 text-white text-xs font-extrabold rounded-xl flex items-center gap-1.5 shadow-lg active:scale-95 self-start md:self-auto"
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              add_circle
+            </span>
+            <span>Add New Menu Item</span>
+          </button>
         </div>
 
         {/* KPI Micro Cards */}
@@ -145,13 +177,13 @@ export const ManagerDashboard: React.FC = () => {
               Menu Items, Prices & Stock Inventory
             </h2>
             <button
-              onClick={() => showToast("Add Item Modal opened")}
-              className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-xl flex items-center gap-1 shadow-sm"
+              onClick={handleOpenAddModal}
+              className="px-3.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-xl flex items-center gap-1 shadow-sm"
             >
               <span className="material-symbols-outlined text-[16px]">
                 add
               </span>
-              <span>Add New Item</span>
+              <span>Create Item</span>
             </button>
           </div>
 
@@ -164,51 +196,23 @@ export const ManagerDashboard: React.FC = () => {
                   <th className="p-3">Price ($)</th>
                   <th className="p-3">Stock Qty</th>
                   <th className="p-3">Prep Time</th>
-                  <th className="p-3">Actions</th>
+                  <th className="p-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {menu.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50">
-                    <td className="p-3 font-bold text-slate-900">
-                      {item.name}
+                    <td className="p-3 font-bold text-slate-900 flex items-center gap-2">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-8 h-8 rounded-lg object-cover bg-slate-100"
+                      />
+                      <span>{item.name}</span>
                     </td>
                     <td className="p-3 text-slate-600">{item.category}</td>
                     <td className="p-3 font-extrabold text-slate-900">
-                      {editingPriceId === item.id ? (
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="number"
-                            step="0.1"
-                            value={tempPrice}
-                            onChange={(e) =>
-                              setTempPrice(parseFloat(e.target.value))
-                            }
-                            className="w-16 h-7 px-1.5 border border-slate-300 rounded text-xs font-bold"
-                          />
-                          <button
-                            onClick={() => handlePriceSave(item.id)}
-                            className="text-emerald-600 font-bold"
-                          >
-                            Save
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5">
-                          <span>${item.price.toFixed(2)}</span>
-                          <button
-                            onClick={() => {
-                              setEditingPriceId(item.id);
-                              setTempPrice(item.price);
-                            }}
-                            className="text-slate-400 hover:text-slate-600"
-                          >
-                            <span className="material-symbols-outlined text-[14px]">
-                              edit
-                            </span>
-                          </button>
-                        </div>
-                      )}
+                      ${item.price.toFixed(2)}
                     </td>
                     <td className="p-3">
                       <div className="flex items-center gap-1.5">
@@ -226,13 +230,26 @@ export const ManagerDashboard: React.FC = () => {
                     <td className="p-3 text-slate-600">
                       {item.preparationTime} mins
                     </td>
-                    <td className="p-3">
-                      <button
-                        onClick={() => showToast(`Editing ${item.name}`)}
-                        className="text-blue-600 hover:underline font-bold"
-                      >
-                        Edit
-                      </button>
+                    <td className="p-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleOpenEditModal(item)}
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-lg transition-colors flex items-center gap-1"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">
+                            edit
+                          </span>
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          onClick={() => deleteMenuItem(item.id)}
+                          className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-lg transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">
+                            delete
+                          </span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -295,6 +312,176 @@ export const ManagerDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit / Add Menu Item Modal */}
+      {isModalOpen && editingItem && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl flex flex-col gap-4 anim-fade-in-up">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="font-extrabold text-base text-slate-900">
+                {editingItem.id ? "Edit Menu Item Details" : "Create New Menu Item"}
+              </h3>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  close
+                </span>
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveModal} className="flex flex-col gap-3 text-xs">
+              <div className="flex flex-col gap-1">
+                <label className="font-bold text-slate-700">Food Item Name</label>
+                <input
+                  type="text"
+                  value={editingItem.name || ""}
+                  onChange={(e) =>
+                    setEditingItem({ ...editingItem, name: e.target.value })
+                  }
+                  required
+                  className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="font-bold text-slate-700">Category</label>
+                  <select
+                    value={editingItem.category || "Burgers"}
+                    onChange={(e) =>
+                      setEditingItem({ ...editingItem, category: e.target.value })
+                    }
+                    className="h-10 px-3 border border-slate-200 rounded-xl font-medium bg-white"
+                  >
+                    <option value="Burgers">Burgers</option>
+                    <option value="Meals">Meals</option>
+                    <option value="Beverages">Beverages</option>
+                    <option value="Snacks">Snacks</option>
+                    <option value="Desserts">Desserts</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="font-bold text-slate-700">Price ($)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={editingItem.price ?? 4.5}
+                    onChange={(e) =>
+                      setEditingItem({
+                        ...editingItem,
+                        price: parseFloat(e.target.value),
+                      })
+                    }
+                    required
+                    className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="font-bold text-slate-700">Available Stock</label>
+                  <input
+                    type="number"
+                    value={editingItem.availableQuantity ?? 15}
+                    onChange={(e) =>
+                      setEditingItem({
+                        ...editingItem,
+                        availableQuantity: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    required
+                    className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="font-bold text-slate-700">
+                    Prep Time (Mins)
+                  </label>
+                  <input
+                    type="number"
+                    value={editingItem.preparationTime ?? 8}
+                    onChange={(e) =>
+                      setEditingItem({
+                        ...editingItem,
+                        preparationTime: parseInt(e.target.value) || 1,
+                      })
+                    }
+                    required
+                    className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="font-bold text-slate-700">Image URL</label>
+                <input
+                  type="text"
+                  value={editingItem.image || ""}
+                  onChange={(e) =>
+                    setEditingItem({ ...editingItem, image: e.target.value })
+                  }
+                  required
+                  className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="font-bold text-slate-700">Description</label>
+                <textarea
+                  value={editingItem.description || ""}
+                  onChange={(e) =>
+                    setEditingItem({
+                      ...editingItem,
+                      description: e.target.value,
+                    })
+                  }
+                  rows={2}
+                  className="p-3 border border-slate-200 rounded-xl font-medium"
+                ></textarea>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="veg-check"
+                  checked={editingItem.isVegetarian || false}
+                  onChange={(e) =>
+                    setEditingItem({
+                      ...editingItem,
+                      isVegetarian: e.target.checked,
+                    })
+                  }
+                  className="w-4 h-4 accent-orange-600 rounded"
+                />
+                <label htmlFor="veg-check" className="font-bold text-slate-700">
+                  Vegetarian Friendly
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-orange-600 text-white font-bold rounded-xl shadow-md hover:bg-orange-500"
+                >
+                  Save Item
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

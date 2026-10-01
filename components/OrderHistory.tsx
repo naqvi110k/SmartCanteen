@@ -1,10 +1,10 @@
-"use client";
-
 import React from "react";
+import { useRouter } from "next/navigation";
 import { useApp } from "../app/context/AppContext";
 
 export const OrderHistory: React.FC = () => {
-  const { orders, addToCart, menu, setActiveTab } = useApp();
+  const router = useRouter();
+  const { orders, addToCart, menu } = useApp();
 
   const handleReorder = (order: typeof orders[0]) => {
     order.items.forEach((item) => {
@@ -13,7 +13,7 @@ export const OrderHistory: React.FC = () => {
         addToCart(menuItem);
       }
     });
-    setActiveTab("cart");
+    router.push("/cart");
   };
 
   return (

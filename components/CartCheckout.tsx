@@ -1,9 +1,9 @@
-"use client";
-
 import React from "react";
+import { useRouter } from "next/navigation";
 import { useApp } from "../app/context/AppContext";
 
 export const CartCheckout: React.FC = () => {
+  const router = useRouter();
   const {
     cart,
     updateCartQty,
@@ -14,8 +14,14 @@ export const CartCheckout: React.FC = () => {
     selectedSlotId,
     setSelectedSlotId,
     placeOrder,
-    setActiveTab,
   } = useApp();
+
+  const handleConfirmOrder = () => {
+    const res = placeOrder(selectedSlotId);
+    if (res) {
+      router.push("/live-order");
+    }
+  };
 
   const peakQuotaMax = 5;
   const currentSlot = slots.find((s) => s.id === selectedSlotId) || slots[1];
@@ -25,7 +31,7 @@ export const CartCheckout: React.FC = () => {
       {/* Back to menu Header */}
       <div className="flex items-center justify-between mb-4">
         <button
-          onClick={() => setActiveTab("home")}
+          onClick={() => router.push("/")}
           className="inline-flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-slate-900 bg-white px-3 py-1.5 rounded-xl border border-slate-200"
         >
           <span className="material-symbols-outlined text-[18px]">
@@ -107,7 +113,7 @@ export const CartCheckout: React.FC = () => {
             reaching the counter.
           </p>
           <button
-            onClick={() => setActiveTab("home")}
+            onClick={() => router.push("/")}
             className="mt-4 bg-orange-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md hover:bg-orange-700 transition-all"
           >
             Explore Menu Items
@@ -198,7 +204,7 @@ export const CartCheckout: React.FC = () => {
           ))}
 
           <button
-            onClick={() => setActiveTab("home")}
+            onClick={() => router.push("/")}
             className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors border border-slate-200"
           >
             <span className="material-symbols-outlined text-[18px] text-orange-600">
@@ -305,7 +311,7 @@ export const CartCheckout: React.FC = () => {
           </div>
 
           <button
-            onClick={() => placeOrder(selectedSlotId)}
+            onClick={handleConfirmOrder}
             className="w-full py-3.5 bg-orange-600 hover:bg-orange-500 text-white font-extrabold text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95"
           >
             <span className="material-symbols-outlined text-[20px]">

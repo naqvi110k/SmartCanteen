@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useApp } from "../app/context/AppContext";
 import { UserRole } from "../app/types";
 
@@ -8,20 +10,29 @@ export const Header: React.FC = () => {
   const {
     role,
     setRole,
-    activeTab,
-    setActiveTab,
     cartCount,
     activeOrder,
     toastMessage,
+    currentUser,
+    logout,
+    isAuthenticated,
   } = useApp();
 
+  const pathname = usePathname();
+  const router = useRouter();
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
 
-  const roleLabels: Record<UserRole, { title: string; badge: string; bg: string }> = {
-    customer: { title: "Customer / Student", badge: "Student Pass", bg: "bg-orange-500" },
-    kitchen: { title: "Kitchen / Staff", badge: "Chef Station", bg: "bg-emerald-600" },
-    manager: { title: "Canteen Manager", badge: "Manager AI", bg: "bg-blue-600" },
-    admin: { title: "System Admin", badge: "Superuser", bg: "bg-purple-600" },
+  const roleLabels: Record<UserRole, { title: string; badge: string; bg: string; defaultRoute: string }> = {
+    customer: { title: "Customer / Student", badge: "Student Pass", bg: "bg-orange-500", defaultRoute: "/" },
+    kitchen: { title: "Kitchen / Staff", badge: "Chef Station", bg: "bg-emerald-600", defaultRoute: "/kitchen" },
+    manager: { title: "Canteen Manager", badge: "Manager AI", bg: "bg-blue-600", defaultRoute: "/manager" },
+    admin: { title: "System Admin", badge: "Superuser", bg: "bg-purple-600", defaultRoute: "/admin" },
+  };
+
+  const handleRoleSwitch = (newRole: UserRole) => {
+    setRole(newRole);
+    setRoleMenuOpen(false);
+    router.push(roleLabels[newRole].defaultRoute);
   };
 
   return (
@@ -29,8 +40,8 @@ export const Header: React.FC = () => {
       <header className="fixed top-0 left-0 right-0 z-50 pt-safe bg-white/90 backdrop-blur-xl border-b border-slate-100 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
         <div className="h-20 px-4 md:px-8 max-w-7xl mx-auto flex items-center justify-between gap-3">
           {/* Brand Logo & Name */}
-          <div
-            onClick={() => role === "customer" && setActiveTab("home")}
+          <Link
+            href="/"
             className="flex items-center gap-2.5 cursor-pointer group shrink-0"
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-600 via-amber-500 to-orange-500 flex items-center justify-center text-white shadow-md transition-transform group-hover:scale-105 shrink-0">
@@ -53,25 +64,25 @@ export const Header: React.FC = () => {
                 Campus Dining & Queue Hub
               </span>
             </div>
-          </div>
+          </Link>
 
-          {/* Nav Links (For Customer Role) */}
+          {/* Navigation Links for Customer */}
           {role === "customer" && (
             <nav className="hidden md:flex items-center gap-1 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/50">
-              <button
-                onClick={() => setActiveTab("home")}
+              <Link
+                href="/"
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                  activeTab === "home"
+                  pathname === "/" || pathname === "/menu"
                     ? "bg-white text-orange-600 shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 Menu
-              </button>
-              <button
-                onClick={() => setActiveTab("cart")}
+              </Link>
+              <Link
+                href="/cart"
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5 ${
-                  activeTab === "cart"
+                  pathname === "/cart"
                     ? "bg-white text-orange-600 shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
@@ -82,11 +93,11 @@ export const Header: React.FC = () => {
                     {cartCount}
                   </span>
                 )}
-              </button>
-              <button
-                onClick={() => setActiveTab("live-order")}
+              </Link>
+              <Link
+                href="/live-order"
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5 ${
-                  activeTab === "live-order"
+                  pathname === "/live-order"
                     ? "bg-white text-orange-600 shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
@@ -95,36 +106,72 @@ export const Header: React.FC = () => {
                 {activeOrder && (
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 )}
-              </button>
-              <button
-                onClick={() => setActiveTab("history")}
+              </Link>
+              <Link
+                href="/history"
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                  activeTab === "history"
+                  pathname === "/history"
                     ? "bg-white text-orange-600 shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 History
-              </button>
-              <button
-                onClick={() => setActiveTab("preferences")}
+              </Link>
+              <Link
+                href="/preferences"
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                  activeTab === "preferences"
+                  pathname === "/preferences"
                     ? "bg-white text-orange-600 shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 Preferences
-              </button>
+              </Link>
             </nav>
+          )}
+
+          {/* Navigation Links for Staff / Manager / Admin */}
+          {role !== "customer" && (
+            <div className="hidden md:flex items-center gap-2 text-xs font-bold">
+              <Link
+                href="/kitchen"
+                className={`px-3.5 py-2 rounded-xl border transition-all ${
+                  pathname === "/kitchen"
+                    ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200"
+                }`}
+              >
+                Kitchen Board
+              </Link>
+              <Link
+                href="/manager"
+                className={`px-3.5 py-2 rounded-xl border transition-all ${
+                  pathname === "/manager"
+                    ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200"
+                }`}
+              >
+                Manager Ops & AI
+              </Link>
+              <Link
+                href="/admin"
+                className={`px-3.5 py-2 rounded-xl border transition-all ${
+                  pathname === "/admin"
+                    ? "bg-purple-600 text-white border-purple-600 shadow-sm"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200"
+                }`}
+              >
+                Admin Console
+              </Link>
+            </div>
           )}
 
           {/* Right Header Actions */}
           <div className="flex items-center gap-2">
             {/* Active Live Token Banner Pill */}
             {activeOrder && role === "customer" && (
-              <button
-                onClick={() => setActiveTab("live-order")}
+              <Link
+                href="/live-order"
                 className="relative inline-flex items-center gap-1.5 bg-orange-50 border border-orange-200/80 px-3 py-1.5 rounded-full hover:bg-orange-100 transition-all shadow-sm active:scale-95"
               >
                 <span className="relative flex h-2.5 w-2.5 items-center justify-center">
@@ -134,13 +181,13 @@ export const Header: React.FC = () => {
                 <span className="text-xs text-orange-950 font-bold whitespace-nowrap">
                   #{activeOrder.tokenNumber}: {activeOrder.status}
                 </span>
-              </button>
+              </Link>
             )}
 
             {/* Cart Icon Trigger */}
             {role === "customer" && (
-              <button
-                onClick={() => setActiveTab("cart")}
+              <Link
+                href="/cart"
                 aria-label="Cart"
                 className="relative w-11 h-11 rounded-full flex items-center justify-center text-slate-700 hover:bg-slate-100 transition-colors active:scale-90"
               >
@@ -152,10 +199,10 @@ export const Header: React.FC = () => {
                     {cartCount}
                   </span>
                 )}
-              </button>
+              </Link>
             )}
 
-            {/* Role Switcher Menu */}
+            {/* Role Switcher / Profile Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setRoleMenuOpen(!roleMenuOpen)}
@@ -164,25 +211,27 @@ export const Header: React.FC = () => {
                 <span className="material-symbols-outlined text-[18px]">
                   manage_accounts
                 </span>
-                <span className="hidden sm:inline">{roleLabels[role].title}</span>
+                <span className="hidden sm:inline">{currentUser.name}</span>
                 <span className="material-symbols-outlined text-[16px]">
                   expand_more
                 </span>
               </button>
 
               {roleMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 anim-fade-in-up">
-                  <div className="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    Switch App Role
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 anim-fade-in-up">
+                  <div className="px-4 py-2 border-b border-slate-100">
+                    <p className="text-xs font-bold text-slate-900">{currentUser.name}</p>
+                    <p className="text-[11px] text-slate-400">{currentUser.email}</p>
+                  </div>
+
+                  <div className="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-1">
+                    Switch User Role
                   </div>
                   {(["customer", "kitchen", "manager", "admin"] as UserRole[]).map(
                     (r) => (
                       <button
                         key={r}
-                        onClick={() => {
-                          setRole(r);
-                          setRoleMenuOpen(false);
-                        }}
+                        onClick={() => handleRoleSwitch(r)}
                         className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center justify-between hover:bg-slate-50 transition-colors ${
                           role === r
                             ? "text-orange-600 font-bold bg-orange-50/50"
@@ -198,6 +247,22 @@ export const Header: React.FC = () => {
                       </button>
                     )
                   )}
+
+                  <div className="pt-2 mt-2 border-t border-slate-100 px-2">
+                    <Link
+                      href="/login"
+                      onClick={() => {
+                        logout();
+                        setRoleMenuOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl flex items-center justify-between"
+                    >
+                      <span>Sign In / Switch Login</span>
+                      <span className="material-symbols-outlined text-[16px]">
+                        login
+                      </span>
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
@@ -207,48 +272,48 @@ export const Header: React.FC = () => {
         {/* Mobile Bottom Navigation Bar for Customer */}
         {role === "customer" && (
           <div className="md:hidden border-t border-slate-100 bg-white/95 px-2 py-1 flex items-center justify-around">
-            <button
-              onClick={() => setActiveTab("home")}
+            <Link
+              href="/"
               className={`flex flex-col items-center py-1 px-3 rounded-lg text-xs font-semibold ${
-                activeTab === "home" ? "text-orange-600" : "text-slate-500"
+                pathname === "/" || pathname === "/menu" ? "text-orange-600" : "text-slate-500"
               }`}
             >
               <span className="material-symbols-outlined text-[20px]">
                 restaurant_menu
               </span>
               <span>Menu</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("cart")}
+            </Link>
+            <Link
+              href="/cart"
               className={`flex flex-col items-center py-1 px-3 rounded-lg text-xs font-semibold relative ${
-                activeTab === "cart" ? "text-orange-600" : "text-slate-500"
+                pathname === "/cart" ? "text-orange-600" : "text-slate-500"
               }`}
             >
               <span className="material-symbols-outlined text-[20px]">
                 shopping_cart
               </span>
               <span>Cart ({cartCount})</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("live-order")}
+            </Link>
+            <Link
+              href="/live-order"
               className={`flex flex-col items-center py-1 px-3 rounded-lg text-xs font-semibold ${
-                activeTab === "live-order" ? "text-orange-600" : "text-slate-500"
+                pathname === "/live-order" ? "text-orange-600" : "text-slate-500"
               }`}
             >
               <span className="material-symbols-outlined text-[20px]">
                 confirmation_number
               </span>
               <span>Live Token</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("history")}
+            </Link>
+            <Link
+              href="/history"
               className={`flex flex-col items-center py-1 px-3 rounded-lg text-xs font-semibold ${
-                activeTab === "history" ? "text-orange-600" : "text-slate-500"
+                pathname === "/history" ? "text-orange-600" : "text-slate-500"
               }`}
             >
               <span className="material-symbols-outlined text-[20px]">history</span>
               <span>History</span>
-            </button>
+            </Link>
           </div>
         )}
       </header>

@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useApp } from "../app/context/AppContext";
 import { MenuItem } from "../app/types";
 
 export const CustomerHome: React.FC = () => {
-  const { menu, addToCart, cartCount, cartTotal, setActiveTab, preferences } =
-    useApp();
+  const { menu, addToCart, cartCount, cartTotal, preferences } = useApp();
+  const router = useRouter();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -103,7 +104,7 @@ export const CustomerHome: React.FC = () => {
             )}
           </div>
           <button
-            onClick={() => setActiveTab("preferences")}
+            onClick={() => router.push("/preferences")}
             title="Dietary Preferences & Filters"
             className="w-12 h-12 shrink-0 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200 transition-all relative active:scale-95"
           >
@@ -185,7 +186,7 @@ export const CustomerHome: React.FC = () => {
             </div>
           </div>
           <button
-            onClick={() => setActiveTab("live-order")}
+            onClick={() => router.push("/live-order")}
             className="shrink-0 text-xs font-bold text-orange-600 hover:underline flex items-center gap-0.5"
           >
             <span>View Queue</span>
@@ -338,7 +339,7 @@ export const CustomerHome: React.FC = () => {
             </div>
 
             <button
-              onClick={() => setActiveTab("cart")}
+              onClick={() => router.push("/cart")}
               className="bg-orange-600 hover:bg-orange-500 text-white px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95"
             >
               <span>Review & Select Pickup Slot</span>

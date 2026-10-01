@@ -1,11 +1,11 @@
-"use client";
-
 import React from "react";
+import { useRouter } from "next/navigation";
 import { useApp } from "../app/context/AppContext";
 import { OrderStatus } from "../app/types";
 
 export const LiveOrderTracker: React.FC = () => {
-  const { activeOrder, updateOrderStatus, setActiveTab } = useApp();
+  const router = useRouter();
+  const { activeOrder, updateOrderStatus } = useApp();
 
   if (!activeOrder) {
     return (
@@ -20,7 +20,7 @@ export const LiveOrderTracker: React.FC = () => {
           You do not have any active canteen pre-orders currently in progress.
         </p>
         <button
-          onClick={() => setActiveTab("home")}
+          onClick={() => router.push("/")}
           className="mt-6 bg-orange-600 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-md hover:bg-orange-700 transition-all"
         >
           Browse Canteen Menu

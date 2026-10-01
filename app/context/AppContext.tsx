@@ -14,6 +14,44 @@ import {
   ItemStatus,
 } from "../types";
 
+export interface UserAccount {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  smartCardBalance?: number;
+  studentId?: string;
+}
+
+const MOCK_USERS: Record<UserRole, UserAccount> = {
+  customer: {
+    id: "u-cust-1",
+    name: "Alex Rivera",
+    email: "alex.rivera@campus.edu.pk",
+    role: "customer",
+    smartCardBalance: 34.5,
+    studentId: "MUET - 24CS031",
+  },
+  kitchen: {
+    id: "u-kitch-1",
+    name: "Chef Marcus Vance",
+    email: "marcus.vance@canteen.edu.pk",
+    role: "kitchen",
+  },
+  manager: {
+    id: "u-mgr-1",
+    name: "Elena Rostova",
+    email: "elena.r@canteen.edu.pk",
+    role: "manager",
+  },
+  admin: {
+    id: "u-admin-1",
+    name: "Admin Director",
+    email: "admin@canteen.edu.pk",
+    role: "admin",
+  },
+};
+
 const INITIAL_MENU: MenuItem[] = [
   {
     id: "item-1",
@@ -312,10 +350,13 @@ const INITIAL_AI_INSIGHTS: AIInsight[] = [
 interface AppContextType {
   role: UserRole;
   setRole: (role: UserRole) => void;
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
+  currentUser: UserAccount;
+  login: (role: UserRole) => void;
+  logout: () => void;
+  isAuthenticated: boolean;
   menu: MenuItem[];
-  setMenu: React.Dispatch<React.SetStateAction<MenuItem[]>>;
+  saveMenuItem: (item: Partial<MenuItem> & { id?: string }) => void;
+  deleteMenuItem: (itemId: string) => void;
   cart: CartItem[];
   addToCart: (item: MenuItem) => void;
   updateCartQty: (itemId: string, delta: number) => void;
@@ -344,7 +385,9 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [role, setRoleState] = useState<UserRole>("customer");
-  const [activeTab, setActiveTab] = useState<string>("home");
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  const [currentUser, setCurrentUser] = useState<UserAccount>(MOCK_USERS.customer);
+
   const [menu, setMenu] = useState<MenuItem[]>(INITIAL_MENU);
   const [cart, setCart] = useState<CartItem[]>([
     {
@@ -384,11 +427,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const setRole = (newRole: UserRole) => {
     setRoleState(newRole);
-    if (newRole === "kitchen") setActiveTab("kitchen");
-    else if (newRole === "manager") setActiveTab("manager");
-    else if (newRole === "admin") setActiveTab("admin");
-    else setActiveTab("home");
-    showToast(`Switched role to ${newRole.toUpperCase()}`);
+    setCurrentUser(MOCK_USERS[newRole]);
+    setIsAuthenticated(true);
+    showToast(`Switched active session to ${newRole.toUpperCase()} (${MOCK_USERS[newRole].name})`);
+  };
+
+  const login = (newRole: UserRole) => {
+    setRoleState(newRole);
+    setCurrentUser(MOCK_USERS[newRole]);
+    setIsAuthenticated(true);
+    showToast(`Logged in successfully as ${MOCK_USERS[newRole].name} (${newRole.toUpperCase()})`);
+  };
+
+  const logout = () => {
+    setIsAuthenticated(false);
+    showToast("Logged out of Smart Canteen session");
+  };
+
+  // Menu CRUD
+  const saveMenuItem = (itemData: Partial<MenuItem> & { id?: string }) => {
+    if (itemData.id) {
+      // Edit
+      setMenu((prev) =>
+        prev.map((m) => (m.id === itemData.id ? ({ ...m, ...itemData } as MenuItem) : m))
+      );
+      showToast(`Updated menu item "${itemData.name}"`);
+    } else {
+      // Add
+      const newItem: MenuItem = {
+        id: `item-${Date.now()}`,
+        name: itemData.name || "New Food Item",
+        category: itemData.category || "Meals",
+        price: itemData.price || 4.0,
+        image:
+          itemData.image ||
+          "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80",
+        availableQuantity: itemData.availableQuantity ?? 15,
+        preparationTime: itemData.preparationTime ?? 8,
+        status: (itemData.availableQuantity ?? 15) > 0 ? "Available" : "Sold Out",
+        description: itemData.description || "Fresh cafeteria meal prepared daily.",
+        isVegetarian: itemData.isVegetarian ?? false,
+        isFastPrep: (itemData.preparationTime ?? 8) <= 5,
+        underFive: (itemData.price || 4.0) < 5,
+        isPopular: false,
+      };
+      setMenu((prev) => [newItem, ...prev]);
+      showToast(`Added new item "${newItem.name}" to canteen menu!`);
+    }
+  };
+
+  const deleteMenuItem = (itemId: string) => {
+    setMenu((prev) => prev.filter((m) => m.id !== itemId));
+    showToast("Deleted item from canteen menu.");
   };
 
   // Cart operations
@@ -453,8 +543,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newOrder: Order = {
       id: `ord-${Date.now()}`,
       tokenNumber: tokenNum,
-      customerId: "cust-1",
-      customerName: "Alex Rivera",
+      customerId: currentUser.id,
+      customerName: currentUser.name,
       items: cart.map((ci, idx) => ({
         id: `oi-${Date.now()}-${idx}`,
         menuItemId: ci.menuItem.id,
@@ -473,7 +563,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       pickupCounter: targetSlot.stationName,
     };
 
-    // Update slots
     setSlots((prev) =>
       prev.map((s) =>
         s.id === targetSlot.id
@@ -486,7 +575,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       )
     );
 
-    // Update menu quantities
     setMenu((prev) =>
       prev.map((m) => {
         const orderedItem = cart.find((ci) => ci.menuItem.id === m.id);
@@ -505,7 +593,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setOrders((prev) => [newOrder, ...prev]);
     clearCart();
     showToast(`Pre-Order Confirmed! Token #${tokenNum} issued.`);
-    setActiveTab("live-order");
     return newOrder;
   };
 
@@ -591,10 +678,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value={{
         role,
         setRole,
-        activeTab,
-        setActiveTab,
+        currentUser,
+        login,
+        logout,
+        isAuthenticated,
         menu,
-        setMenu,
+        saveMenuItem,
+        deleteMenuItem,
         cart,
         addToCart,
         updateCartQty,
