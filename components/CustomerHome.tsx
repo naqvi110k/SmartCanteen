@@ -226,8 +226,15 @@ export const CustomerHome: React.FC = () => {
               {/* Top Item Badges */}
               <div className="relative w-full h-44 rounded-xl overflow-hidden mb-3 bg-slate-100">
                 <img
-                  src={item.image}
+                  src={item.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80"}
                   alt={item.name}
+                  loading="lazy"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (target.src !== "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80") {
+                      target.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80";
+                    }
+                  }}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
                 <div className="absolute top-2 left-2 flex flex-col gap-1">

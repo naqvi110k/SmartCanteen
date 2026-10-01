@@ -1,8 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useApp } from "../app/context/AppContext";
 import { MenuItem } from "../app/types";
+import { aiAPI } from "../app/lib/api";
+
+interface AIOperationsData {
+  demand: { itemName: string; projectedPortions: number; demandLevel: string; peakTime: string }[];
+  peak: { estimatedPeakWindow: string; orderPressure: string; recommendation: string };
+  prep: { itemName: string; currentStock: number; suggestedPrepBeforePeak: number; urgency: string }[];
+  waste: { itemName: string; availableStock: number; turnoverRate: string; wasteRisk: string; actionableAdvice: string }[];
+  delays: { activeOrdersCount: number; systemQueueStatus: string; predictions: { orderId: string; delayProbability: number; riskLevel: string }[] };
+  sales: { averageOrderValueRs: string; insights: string[] };
+  recommendations: { item_name: string; category: string; available_quantity: number }[];
+}
 
 export const ManagerDashboard: React.FC = () => {
   const {
@@ -18,6 +29,36 @@ export const ManagerDashboard: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Partial<MenuItem> | null>(null);
+  const [aiOperations, setAiOperations] = useState<AIOperationsData | null>(null);
+  const [isLoadingAI, setIsLoadingAI] = useState(true);
+
+  const loadAIOperations = async () => {
+    setIsLoadingAI(true);
+    const [demand, peak, prep, waste, delays, sales, recommendations] = await Promise.all([
+      aiAPI.getDemandPrediction().catch(() => ({ data: { projectedDemand: [] } })),
+      aiAPI.getPeakTimePrediction().catch(() => ({ data: { estimatedPeakWindow: "Unavailable", orderPressure: "Unknown", recommendation: "No peak-time recommendation available." } })),
+      aiAPI.getPrepForecast().catch(() => ({ data: [] })),
+      aiAPI.getWastePrediction().catch(() => ({ data: [] })),
+      aiAPI.getDelayPrediction().catch(() => ({ data: { activeOrdersCount: 0, systemQueueStatus: "Unavailable", predictions: [] } })),
+      aiAPI.getSalesInsights().catch(() => ({ data: { averageOrderValueRs: "0.00", insights: [] } })),
+      aiAPI.getRecommendations().catch(() => ({ data: { items: [] } })),
+    ]);
+
+    setAiOperations({
+      demand: demand.data.projectedDemand || [],
+      peak: peak.data,
+      prep: prep.data || [],
+      waste: waste.data || [],
+      delays: delays.data,
+      sales: sales.data,
+      recommendations: recommendations.data.items || [],
+    });
+    setIsLoadingAI(false);
+  };
+
+  useEffect(() => {
+    loadAIOperations();
+  }, []);
 
   const handleOpenAddModal = () => {
     setEditingItem({
@@ -167,6 +208,110 @@ export const ManagerDashboard: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Live AI Operations Cockpit */}
+      <section className="bg-slate-950 text-white rounded-2xl p-5 shadow-xl border border-slate-800 flex flex-col gap-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-cyan-400 font-bold">Live decision support</p>
+            <h2 className="text-lg font-extrabold">AI Operations Cockpit</h2>
+            <p className="text-xs text-slate-400 mt-1">Demand, staffing, preparation, waste, and sales signals from the prediction engine.</p>
+          </div>
+          <button
+            onClick={loadAIOperations}
+            disabled={isLoadingAI}
+            title="Refresh AI predictions"
+            className="px-3 py-2 bg-white/10 hover:bg-white/20 disabled:opacity-50 rounded-lg text-xs font-bold flex items-center gap-1.5 self-start"
+          >
+            <span className="material-symbols-outlined text-[16px]">refresh</span>
+            {isLoadingAI ? "Refreshing..." : "Refresh predictions"}
+          </button>
+        </div>
+
+        {aiOperations ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="bg-cyan-400/10 border border-cyan-400/20 rounded-xl p-4">
+                <p className="text-[10px] uppercase tracking-wider text-cyan-300 font-bold">Next peak window</p>
+                <p className="text-xl font-extrabold mt-1">{aiOperations.peak.estimatedPeakWindow}</p>
+                <p className="text-xs text-slate-300 mt-1">{aiOperations.peak.orderPressure}</p>
+              </div>
+              <div className="bg-orange-400/10 border border-orange-400/20 rounded-xl p-4">
+                <p className="text-[10px] uppercase tracking-wider text-orange-300 font-bold">Kitchen queue</p>
+                <p className="text-xl font-extrabold mt-1">{aiOperations.delays.activeOrdersCount} active</p>
+                <p className="text-xs text-slate-300 mt-1">{aiOperations.delays.systemQueueStatus}</p>
+              </div>
+              <div className="bg-emerald-400/10 border border-emerald-400/20 rounded-xl p-4">
+                <p className="text-[10px] uppercase tracking-wider text-emerald-300 font-bold">Average order value</p>
+                <p className="text-xl font-extrabold mt-1">Rs. {aiOperations.sales.averageOrderValueRs}</p>
+                <p className="text-xs text-slate-300 mt-1">Based on completed orders</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="bg-white text-slate-900 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-bold text-sm">Demand & preparation plan</h3>
+                  <span className="text-[10px] text-slate-400">Before {aiOperations.peak.estimatedPeakWindow}</span>
+                </div>
+                <div className="divide-y divide-slate-100">
+                  {aiOperations.demand.slice(0, 5).map((item) => {
+                    const prep = aiOperations.prep.find((forecast) => forecast.itemName === item.itemName);
+                    return (
+                      <div key={item.itemName} className="py-2 flex items-center justify-between gap-3 text-xs">
+                        <div className="min-w-0">
+                          <p className="font-bold truncate">{item.itemName}</p>
+                          <p className="text-slate-500">{item.demandLevel} demand · peak {item.peakTime}</p>
+                        </div>
+                        <span className="shrink-0 text-orange-600 font-extrabold">{prep?.suggestedPrepBeforePeak ?? item.projectedPortions} portions</span>
+                      </div>
+                    );
+                  })}
+                  {aiOperations.demand.length === 0 && <p className="text-xs text-slate-500">No demand signal available yet.</p>}
+                </div>
+                <p className="text-[11px] text-slate-500 mt-3">{aiOperations.peak.recommendation}</p>
+              </div>
+
+              <div className="bg-white text-slate-900 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-bold text-sm">Waste risk watchlist</h3>
+                  <span className="text-[10px] text-slate-400">Turnover based</span>
+                </div>
+                <div className="divide-y divide-slate-100">
+                  {aiOperations.waste.slice(0, 4).map((item) => (
+                    <div key={item.itemName} className="py-2 flex items-center justify-between gap-3 text-xs">
+                      <div className="min-w-0">
+                        <p className="font-bold truncate">{item.itemName}</p>
+                        <p className="text-slate-500">{item.availableStock} in stock · {item.turnoverRate} turnover</p>
+                      </div>
+                      <span className={`shrink-0 font-extrabold ${item.wasteRisk === "High" ? "text-red-600" : item.wasteRisk === "Medium" ? "text-orange-600" : "text-emerald-600"}`}>{item.wasteRisk}</span>
+                    </div>
+                  ))}
+                  {aiOperations.waste.length === 0 && <p className="text-xs text-slate-500">No waste risk signal available yet.</p>}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <h3 className="font-bold text-sm mb-2">Sales insights</h3>
+                <ul className="space-y-2 text-xs text-slate-300">
+                  {aiOperations.sales.insights.slice(0, 3).map((insight) => <li key={insight} className="flex gap-2"><span className="text-emerald-400">•</span>{insight}</li>)}
+                </ul>
+              </div>
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <h3 className="font-bold text-sm mb-2">Smart recommendations</h3>
+                <div className="flex flex-wrap gap-2">
+                  {aiOperations.recommendations.slice(0, 4).map((item) => <span key={item.item_name} className="px-2.5 py-1.5 bg-white/10 rounded-lg text-xs font-semibold">{item.item_name}</span>)}
+                  {aiOperations.recommendations.length === 0 && <p className="text-xs text-slate-400">No recommendations available yet.</p>}
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-slate-400">Loading AI operations data...</p>
+        )}
+      </section>
 
       {/* Grid: Inventory Manager & Slot Capacities */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

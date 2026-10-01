@@ -134,8 +134,15 @@ export const CartCheckout: React.FC = () => {
             >
               <div className="flex items-center gap-4">
                 <img
-                  src={menuItem.image}
+                  src={menuItem.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80"}
                   alt={menuItem.name}
+                  loading="lazy"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (target.src !== "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80") {
+                      target.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80";
+                    }
+                  }}
                   className="w-20 h-20 rounded-xl object-cover bg-slate-100 shrink-0"
                 />
 
