@@ -297,7 +297,7 @@ export function mapBackendMenuItem(b: BackendMenuItem): MenuItem {
     name: b.item_name,
     category: b.category,
     price: b.price,
-    image: b.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80",
+    image: b.image || "/menu-fallback.svg",
     availableQuantity: b.available_quantity,
     preparationTime: b.preparation_time,
     status: b.status as MenuItem["status"],
