@@ -3,205 +3,79 @@
 import React from "react";
 import { useApp } from "../app/context/AppContext";
 
+type BooleanPreference =
+  | "vegetarianOnly"
+  | "veganOnly"
+  | "glutenFree"
+  | "nutAllergyWarning"
+  | "notifyOnReady"
+  | "notifyOnDelay";
+
 export const CustomerPreferences: React.FC = () => {
-  const { preferences, updatePreferences, currentUser, showToast } = useApp();
+  const { preferences, updatePreferences } = useApp();
+
+  const toggle = (field: BooleanPreference) =>
+    updatePreferences({ [field]: !preferences[field] });
 
   return (
-    <div className="max-w-4xl mx-auto w-full px-4 pt-4 pb-32 flex flex-col gap-6">
-      {/* 1. Profile Header Hero Card */}
-      <div className="w-full bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col items-center text-center relative overflow-hidden">
-        {/* Ambient Glow */}
-        <div className="absolute -top-12 -right-12 w-36 h-36 bg-orange-100 rounded-full blur-2xl opacity-60 pointer-events-none"></div>
-        <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-amber-100 rounded-full blur-2xl opacity-40 pointer-events-none"></div>
-
-        {/* Avatar */}
-        <div className="relative mb-3">
-          <div className="w-24 h-24 rounded-full overflow-hidden bg-slate-100 shadow-md border-2 border-white flex items-center justify-center font-headline font-extrabold text-2xl text-slate-800 bg-gradient-to-tr from-orange-200 to-amber-100">
-            {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : "U"}
-          </div>
-          <button
-            onClick={() => showToast("Profile picture editor opened")}
-            className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-orange-600 text-white flex items-center justify-center shadow-md hover:scale-105 transition-transform"
-          >
-            <span className="material-symbols-outlined text-[18px]">
-              photo_camera
-            </span>
-          </button>
-        </div>
-
-        <h1 className="font-headline text-xl font-extrabold text-slate-900 tracking-tight">
-          {currentUser.name || "Student Customer"}
+    <div className="max-w-3xl mx-auto w-full px-4 pt-6 pb-32 flex flex-col gap-6">
+      <div>
+        <h1 className="font-headline text-2xl font-extrabold text-slate-900">
+          Preferences
         </h1>
-
-        <div className="mt-1 inline-flex items-center gap-1.5 bg-slate-100 px-3 py-1 rounded-full text-slate-700">
-          <span className="material-symbols-outlined text-[16px] text-blue-600">
-            school
-          </span>
-          <span className="text-xs font-bold">{currentUser.studentId || "MUET - 24CS031"}</span>
-        </div>
-
-        <div className="mt-1 flex items-center gap-1 text-slate-500 text-xs">
-          <span>{currentUser.email || "student@canteen.com"}</span>
-          <span className="material-symbols-outlined text-[16px] text-emerald-600">
-            verified
-          </span>
-        </div>
-
-        {/* Smart Card Mini Wallet Pill */}
-        <div className="mt-4 w-full bg-slate-50 rounded-xl p-4 flex items-center justify-between border border-slate-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-[22px]">
-                account_balance_wallet
-              </span>
-            </div>
-            <div className="flex flex-col text-left">
-              <span className="text-xs text-slate-500 font-medium">
-                Campus Smart Card Balance
-              </span>
-              <span className="text-lg font-extrabold text-slate-900">
-                $34.50
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={() => showToast("Added $10.00 to Smart Card Balance")}
-            className="h-9 px-4 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold flex items-center gap-1 shadow-sm transition-all active:scale-95"
-          >
-            <span className="material-symbols-outlined text-[18px]">
-              add_circle
-            </span>
-            <span>Top Up</span>
-          </button>
-        </div>
+        <p className="mt-1 text-sm text-slate-500">
+          Your choices are saved to your customer account.
+        </p>
       </div>
 
-      {/* 2. Quick Micro Stats */}
-      <div className="grid grid-cols-3 gap-3 w-full">
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col items-center text-center">
-          <div className="w-9 h-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mb-1">
-            <span className="material-symbols-outlined text-[20px]">
-              shopping_bag
-            </span>
-          </div>
-          <span className="text-lg font-extrabold text-slate-900">28</span>
-          <span className="text-[11px] text-slate-500 font-medium">
-            Total Orders
-          </span>
-        </div>
-
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col items-center text-center">
-          <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mb-1">
-            <span className="material-symbols-outlined text-[20px]">
-              fastfood
-            </span>
-          </div>
-          <span className="text-xs font-extrabold text-slate-900 truncate w-full">
-            Chicken Burger
-          </span>
-          <span className="text-[11px] text-slate-500 font-medium">
-            Favorite Meal
-          </span>
-        </div>
-
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col items-center text-center">
-          <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center mb-1">
-            <span className="material-symbols-outlined text-[20px]">bolt</span>
-          </div>
-          <span className="text-lg font-extrabold text-slate-900">8 mins</span>
-          <span className="text-[11px] text-slate-500 font-medium">
-            Avg Wait
-          </span>
-        </div>
-      </div>
-
-      {/* 3. Campus & Dietary Preferences */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
+      <section className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
         <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-          Dietary & Canteen Preferences
+          Dietary preferences
         </h2>
+        <PreferenceToggle label="Vegetarian meals" description="Highlight vegetarian meals in the menu" checked={preferences.vegetarianOnly} onChange={() => toggle("vegetarianOnly")} />
+        <PreferenceToggle label="Vegan meals" description="Highlight vegan meals in the menu" checked={preferences.veganOnly} onChange={() => toggle("veganOnly")} />
+        <PreferenceToggle label="Gluten-free meals" description="Highlight gluten-free meals in the menu" checked={preferences.glutenFree} onChange={() => toggle("glutenFree")} />
+        <PreferenceToggle label="Nut allergy warning" description="Warn when meals contain nuts or traces of nuts" checked={preferences.nutAllergyWarning} onChange={() => toggle("nutAllergyWarning")} />
+      </section>
 
-        {/* Dietary Toggles */}
-        <div className="flex flex-col gap-3 divide-y divide-slate-100">
-          <div className="pt-2 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[20px]">
-                  eco
-                </span>
-              </span>
-              <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-900">
-                  Vegetarian Filter
-                </span>
-                <span className="text-[11px] text-slate-500">
-                  Automatically highlight vegetarian meals
-                </span>
-              </div>
-            </div>
-            <input
-              type="checkbox"
-              checked={preferences.vegetarianOnly}
-              onChange={(e) =>
-                updatePreferences({ vegetarianOnly: e.target.checked })
-              }
-              className="w-5 h-5 accent-orange-600 rounded cursor-pointer"
-            />
-          </div>
+      <section className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
+        <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+          Ordering preferences
+        </h2>
+        <label className="flex flex-col gap-2 text-xs font-bold text-slate-700">
+          Preferred pickup slot
+          <input type="text" value={preferences.preferredPickupSlot} onChange={(e) => updatePreferences({ preferredPickupSlot: e.target.value })} className="h-11 px-3 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/30" placeholder="e.g. 1:15 PM - 1:30 PM" />
+        </label>
+        <label className="flex flex-col gap-2 text-xs font-bold text-slate-700">
+          Maximum daily budget
+          <input type="number" min="0" step="0.01" value={preferences.maxDailyBudget} onChange={(e) => updatePreferences({ maxDailyBudget: Number(e.target.value) })} className="h-11 px-3 rounded-xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/30" />
+        </label>
+      </section>
 
-          <div className="pt-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[20px]">
-                  warning
-                </span>
-              </span>
-              <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-900">
-                  Nut Allergy Warning
-                </span>
-                <span className="text-[11px] text-slate-500">
-                  Alert when food items contain trace peanuts/nuts
-                </span>
-              </div>
-            </div>
-            <input
-              type="checkbox"
-              checked={preferences.nutAllergyWarning}
-              onChange={(e) =>
-                updatePreferences({ nutAllergyWarning: e.target.checked })
-              }
-              className="w-5 h-5 accent-orange-600 rounded cursor-pointer"
-            />
-          </div>
-
-          <div className="pt-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[20px]">
-                  notifications_active
-                </span>
-              </span>
-              <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-900">
-                  Token Ready Push Alerts
-                </span>
-                <span className="text-[11px] text-slate-500">
-                  Receive sound notification when order is ready for pickup
-                </span>
-              </div>
-            </div>
-            <input
-              type="checkbox"
-              checked={preferences.notifyOnReady}
-              onChange={(e) =>
-                updatePreferences({ notifyOnReady: e.target.checked })
-              }
-              className="w-5 h-5 accent-orange-600 rounded cursor-pointer"
-            />
-          </div>
-        </div>
-      </div>
+      <section className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
+        <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+          Notifications
+        </h2>
+        <PreferenceToggle label="Order ready alerts" description="Notify me when my order is ready for pickup" checked={preferences.notifyOnReady} onChange={() => toggle("notifyOnReady")} />
+        <PreferenceToggle label="Delay alerts" description="Notify me when my order is delayed" checked={preferences.notifyOnDelay} onChange={() => toggle("notifyOnDelay")} />
+      </section>
     </div>
   );
 };
+
+interface PreferenceToggleProps {
+  label: string;
+  description: string;
+  checked: boolean;
+  onChange: () => void;
+}
+
+const PreferenceToggle: React.FC<PreferenceToggleProps> = ({ label, description, checked, onChange }) => (
+  <label className="flex items-center justify-between gap-4 py-2 border-b border-slate-100 last:border-0 cursor-pointer">
+    <span className="flex flex-col gap-1">
+      <span className="text-sm font-bold text-slate-900">{label}</span>
+      <span className="text-xs text-slate-500">{description}</span>
+    </span>
+    <input type="checkbox" checked={checked} onChange={onChange} className="w-5 h-5 accent-orange-600 rounded cursor-pointer shrink-0" />
+  </label>
+);

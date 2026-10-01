@@ -38,11 +38,22 @@ export const KitchenDashboard: React.FC = () => {
     const tokenOrId = value.trim();
     if (!tokenOrId) return;
 
+    let confirmation: { token_number?: string; order_id?: string };
     try {
-      const res = await collectionAPI.confirm({
-        token_number: tokenOrId.startsWith("C-") ? tokenOrId : undefined,
-        order_id: !tokenOrId.startsWith("C-") ? tokenOrId : undefined,
-      });
+      const qrPayload = JSON.parse(tokenOrId);
+      confirmation = qrPayload.token
+        ? { token_number: qrPayload.token }
+        : { order_id: qrPayload.order_id };
+    } catch {
+      confirmation = tokenOrId.startsWith("C-")
+        ? { token_number: tokenOrId }
+        : { order_id: tokenOrId };
+    }
+
+    if (!confirmation.token_number && !confirmation.order_id) return;
+
+    try {
+      const res = await collectionAPI.confirm(confirmation);
       showToast(`✅ Verified Token ${tokenOrId}! Marked as COMPLETED.`);
       updateOrderStatus(res.data._id || res.data.order_id, "Completed");
       setScanTokenInput("");

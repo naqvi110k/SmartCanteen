@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { io } from "socket.io-client";
 import {
   MenuItem,
   CartItem,
@@ -495,8 +496,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (isAuthenticated) {
       fetchOrders();
+      authAPI.getPreferences()
+        .then((res) => setPreferences((prev) => ({ ...prev, ...res.data })))
+        .catch((err) => console.warn("[API] Failed to fetch preferences:", err));
     }
   }, [isAuthenticated, fetchOrders]);
+
+  // Listen for order notifications sent by the backend in real time.
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser.id) return;
+
+    const socket = io("http://localhost:5000", { transports: ["websocket"] });
+    socket.emit("join_user_room", currentUser.id);
+    socket.on("notification", (notification: { type: string; title: string; message: string }) => {
+      if (notification.type === "ORDER_READY" && !preferences.notifyOnReady) return;
+      if (notification.type === "ORDER_DELAYED" && !preferences.notifyOnDelay) return;
+      showToast(`${notification.title}: ${notification.message}`);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [isAuthenticated, currentUser.id, preferences.notifyOnReady, preferences.notifyOnDelay, showToast]);
 
   // ─── Role Switch (login as different role) ────────────
   const setRole = useCallback(
@@ -810,13 +831,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const activeOrder =
     orders.find((o) => ["Placed", "Accepted", "Preparing", "Ready"].includes(o.status)) ||
-    orders[0] ||
     null;
 
   const updatePreferences = useCallback(
-    (newPrefs: Partial<CustomerPreferences>) => {
+    async (newPrefs: Partial<CustomerPreferences>) => {
       setPreferences((prev) => ({ ...prev, ...newPrefs }));
-      showToast("Dietary preferences updated!");
+      try {
+        const res = await authAPI.updatePreferences(newPrefs);
+        setPreferences((prev) => ({ ...prev, ...res.data }));
+        showToast("Preferences saved.");
+      } catch (err) {
+        console.warn("[API] Failed to save preferences:", err);
+        showToast("Could not save preferences.");
+      }
     },
     [showToast]
   );

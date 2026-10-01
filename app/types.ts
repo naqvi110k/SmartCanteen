@@ -59,6 +59,7 @@ export interface OrderItem {
 export interface Order {
   id: string;
   tokenNumber: string; // e.g. "C-023"
+  qrCode?: string;
   customerId: string;
   customerName: string;
   items: OrderItem[];

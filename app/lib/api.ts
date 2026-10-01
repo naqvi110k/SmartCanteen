@@ -81,6 +81,15 @@ export const authAPI = {
     }),
 
   getMe: () => apiFetch<{ message: string; user: any }>("/auth/me"),
+
+  getPreferences: () =>
+    apiFetch<{ data: Record<string, boolean | number | string> }>("/auth/preferences"),
+
+  updatePreferences: (preferences: Record<string, boolean | number | string>) =>
+    apiFetch<{ data: Record<string, boolean | number | string> }>("/auth/preferences", {
+      method: "PATCH",
+      body: JSON.stringify(preferences),
+    }),
 };
 
 // ─── Menu APIs ─────────────────────────────────────────
@@ -318,6 +327,7 @@ export function mapBackendOrder(b: BackendOrder): Order {
   return {
     id: b._id || b.order_id,
     tokenNumber: b.token_number,
+    qrCode: b.qr_code,
     customerId: b.customer_id,
     customerName: b.customer_name,
     items: b.items.map(

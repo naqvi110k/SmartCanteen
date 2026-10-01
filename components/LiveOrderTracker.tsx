@@ -168,38 +168,17 @@ export const LiveOrderTracker: React.FC = () => {
           {/* Laser Scanner animation line */}
           <div className="absolute inset-x-3 h-0.5 bg-gradient-to-r from-transparent via-orange-600 to-transparent z-10 laser-scanner-line"></div>
 
-          {/* Inline QR Code SVG */}
-          <svg
-            className="w-40 h-40 text-slate-900"
-            fill="currentColor"
-            viewBox="0 0 100 100"
-          >
-            <rect fill="currentColor" height="28" rx="3" width="28" x="5" y="5"></rect>
-            <rect fill="white" height="20" rx="2" width="20" x="9" y="9"></rect>
-            <rect fill="currentColor" height="12" rx="1.5" width="12" x="13" y="13"></rect>
-            <rect fill="currentColor" height="28" rx="3" width="28" x="67" y="5"></rect>
-            <rect fill="white" height="20" rx="2" width="20" x="71" y="9"></rect>
-            <rect fill="currentColor" height="12" rx="1.5" width="12" x="75" y="13"></rect>
-            <rect fill="currentColor" height="28" rx="3" width="28" x="5" y="67"></rect>
-            <rect fill="white" height="20" rx="2" width="20" x="9" y="71"></rect>
-            <rect fill="currentColor" height="12" rx="1.5" width="12" x="13" y="75"></rect>
-            <rect height="6" rx="1" width="6" x="38" y="7"></rect>
-            <rect height="6" rx="1" width="6" x="48" y="7"></rect>
-            <rect height="6" rx="1" width="6" x="56" y="7"></rect>
-            <rect height="6" rx="1" width="8" x="38" y="17"></rect>
-            <rect height="6" rx="1" width="12" x="50" y="17"></rect>
-            <rect height="6" rx="1" width="6" x="38" y="27"></rect>
-            <rect height="6" rx="1" width="14" x="48" y="27"></rect>
-            <rect height="6" rx="1" width="6" x="7" y="38"></rect>
-            <rect height="6" rx="1" width="10" x="17" y="38"></rect>
-            <rect height="6" rx="1" width="18" x="41" y="38"></rect>
-            <rect height="6" rx="1" width="10" x="73" y="38"></rect>
-            <rect height="6" rx="1" width="12" x="7" y="48"></rect>
-            <rect fill="#ea580c" height="8" rx="1" width="8" x="33" y="48"></rect>
-            <rect height="6" rx="1" width="10" x="45" y="48"></rect>
-            <rect height="6" rx="1" width="16" x="59" y="48"></rect>
-            <rect height="6" rx="1" width="14" x="79" y="48"></rect>
-          </svg>
+          {activeOrder.qrCode ? (
+            <img
+              src={activeOrder.qrCode}
+              alt={`QR code for token ${activeOrder.tokenNumber}`}
+              className="w-40 h-40 object-contain"
+            />
+          ) : (
+            <div className="px-5 text-center text-xs font-semibold text-slate-500">
+              Generating your secure QR code...
+            </div>
+          )}
         </div>
 
         <p className="text-xs text-slate-500 mt-2 flex items-center gap-1">

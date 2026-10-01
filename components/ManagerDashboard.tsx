@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useApp } from "../app/context/AppContext";
 import { MenuItem } from "../app/types";
-import { aiAPI } from "../app/lib/api";
+import { aiAPI, analyticsAPI, queueAPI } from "../app/lib/api";
 
 interface AIOperationsData {
   demand: { itemName: string; projectedPortions: number; demandLevel: string; peakTime: string }[];
@@ -14,7 +14,6 @@ interface AIOperationsData {
   sales: { averageOrderValueRs: string; insights: string[] };
   recommendations: { item_name: string; category: string; available_quantity: number }[];
 }
-
 export const ManagerDashboard: React.FC = () => {
   const {
     menu,
@@ -59,6 +58,40 @@ export const ManagerDashboard: React.FC = () => {
   useEffect(() => {
     loadAIOperations();
   }, []);
+  const [dashboardMetrics, setDashboardMetrics] = useState<any>(null);
+  const [managementReports, setManagementReports] = useState<any>(null);
+  const [liveQueue, setLiveQueue] = useState<any[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      analyticsAPI.getDashboard(),
+      analyticsAPI.getReports(),
+      queueAPI.getLive(),
+    ])
+      .then(([dashboardResponse, reportsResponse, queueResponse]) => {
+        setDashboardMetrics(dashboardResponse.data);
+        setManagementReports(reportsResponse.data);
+        const queueData = queueResponse.data as any;
+        setLiveQueue(Array.isArray(queueData) ? queueData : queueData.orders || []);
+      })
+      .catch((error) => {
+        console.warn("[Manager] Failed to load live analytics:", error);
+        showToast("Live analytics are temporarily unavailable.");
+      });
+  }, [showToast]);
+
+  const liveTotalSales = dashboardMetrics?.totalSales ?? stats.totalSalesToday;
+  const liveCompleted = dashboardMetrics?.completedOrders ?? stats.completedOrders;
+  const liveTotalOrders = dashboardMetrics?.totalOrdersToday ?? stats.totalOrdersToday;
+  const liveAvgPrep = dashboardMetrics?.averagePreparationTimeMinutes ?? stats.avgPrepTimeMinutes;
+  const liveCancelled = dashboardMetrics?.cancelledOrders ?? stats.cancelledOrders;
+  const queuePriority = (order: any) => {
+    const pickupUrgency = order.is_approaching_pickup ? 100 : 0;
+    const delayRisk = order.is_delayed_risk || order.is_delayed ? 80 : 0;
+    const itemCount = (order.items || []).reduce((sum: number, item: any) => sum + (item.quantity || 1), 0);
+    return pickupUrgency + delayRisk + itemCount * 3 + (order.priority_score || 0);
+  };
+  const prioritizedQueue = [...liveQueue].sort((a, b) => queuePriority(b) - queuePriority(a));
 
   const handleOpenAddModal = () => {
     setEditingItem({
@@ -126,7 +159,7 @@ export const ManagerDashboard: React.FC = () => {
               Total Revenue Today
             </span>
             <span className="text-xl font-extrabold text-emerald-400">
-              ${stats.totalSalesToday.toFixed(2)}
+              ${Number(liveTotalSales).toFixed(2)}
             </span>
           </div>
 
@@ -135,7 +168,7 @@ export const ManagerDashboard: React.FC = () => {
               Orders Completed / Total
             </span>
             <span className="text-xl font-extrabold text-white">
-              {stats.completedOrders} / {stats.totalOrdersToday}
+              {liveCompleted} / {liveTotalOrders}
             </span>
           </div>
 
@@ -144,7 +177,7 @@ export const ManagerDashboard: React.FC = () => {
               Avg Preparation Time
             </span>
             <span className="text-xl font-extrabold text-orange-400">
-              {stats.avgPrepTimeMinutes} mins
+              {liveAvgPrep} mins
             </span>
           </div>
 
@@ -153,7 +186,7 @@ export const ManagerDashboard: React.FC = () => {
               Cancelled Orders
             </span>
             <span className="text-xl font-extrabold text-red-400">
-              {stats.cancelledOrders}
+              {liveCancelled}
             </span>
           </div>
         </div>
@@ -312,7 +345,85 @@ export const ManagerDashboard: React.FC = () => {
           <p className="text-sm text-slate-400">Loading AI operations data...</p>
         )}
       </section>
+      {/* Live Dashboard Analytics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <AnalyticsValue label="Orders preparing" value={dashboardMetrics?.ordersPreparing ?? stats.preparingOrders} />
+        <AnalyticsValue label="Orders ready" value={dashboardMetrics?.ordersReady ?? stats.readyOrders} />
+        <AnalyticsValue label="Peak ordering time" value={dashboardMetrics?.peakOrderingTime ?? stats.peakOrderingTime} />
+        <AnalyticsValue label="Average queue size" value={dashboardMetrics?.averageQueueSize ?? liveQueue.length} />
+        <AnalyticsValue label="Most ordered" value={dashboardMetrics?.mostOrderedFood ?? stats.popularItems[0]?.name ?? "-"} />
+        <AnalyticsValue label="Least ordered" value={dashboardMetrics?.leastOrderedFood ?? "-"} />
+      </div>
 
+      {managementReports && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ReportList
+            title="Sales by day"
+            rows={(managementReports.salesByDay || []).slice(-7).map((row: any) => ({
+              label: row.date,
+              value: `$${Number(row.revenue || 0).toFixed(2)} (${row.orderCount || 0} orders)`,
+            }))}
+          />
+          <ReportList
+            title="Sales by food item"
+            rows={(managementReports.salesByFoodItem || []).slice(0, 6).map((row: any) => ({
+              label: row.itemName,
+              value: `$${Number(row.revenue || 0).toFixed(2)} (${row.quantitySold || 0} sold)`,
+            }))}
+          />
+          <ReportList
+            title="Pickup-slot usage"
+            rows={Object.entries(managementReports.pickupSlotUsage || {}).map(([label, value]) => ({
+              label,
+              value: `${value} orders`,
+            }))}
+          />
+          <ReportList
+            title="Cancellation reasons"
+            rows={Object.entries(managementReports.cancellationReasons || {}).map(([label, value]) => ({
+              label,
+              value: `${value} orders`,
+            }))}
+            footer={`Delayed orders: ${managementReports.delayedOrderPercentage || "0%"}`}
+          />
+        </div>
+      )}
+
+      {/* Smart Queue Priority */}
+      <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold text-slate-900">Smart Queue Priority</h2>
+            <p className="text-xs text-slate-500">Orders are ranked by delay risk, pickup urgency, size, and kitchen workload.</p>
+          </div>
+          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">{prioritizedQueue.length} active</span>
+        </div>
+        {prioritizedQueue.length === 0 ? (
+          <p className="text-sm text-slate-500">No active orders in the kitchen queue.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] tracking-wider">
+                <tr><th className="p-3">Priority</th><th className="p-3">Token</th><th className="p-3">Status</th><th className="p-3">Signals</th></tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {prioritizedQueue.slice(0, 10).map((order: any, index) => (
+                  <tr key={order._id || order.order_id || order.token_number}>
+                    <td className="p-3 font-extrabold text-orange-600">#{index + 1}</td>
+                    <td className="p-3 font-bold text-slate-900">{order.token_number}</td>
+                    <td className="p-3 text-slate-600">{order.order_status}</td>
+                    <td className="p-3 flex flex-wrap gap-1">
+                      {order.is_delayed_risk && <span className="px-2 py-1 rounded-full bg-red-50 text-red-700 font-bold">Delay risk</span>}
+                      {order.is_approaching_pickup && <span className="px-2 py-1 rounded-full bg-amber-50 text-amber-700 font-bold">Pickup soon</span>}
+                      {!order.is_delayed_risk && !order.is_approaching_pickup && <span className="text-slate-400">Normal flow</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
       {/* Grid: Inventory Manager & Slot Capacities */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Inventory & Price Control Table */}
@@ -630,3 +741,33 @@ export const ManagerDashboard: React.FC = () => {
     </div>
   );
 };
+
+const AnalyticsValue: React.FC<{ label: string; value: string | number }> = ({ label, value }) => (
+  <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
+    <span className="text-[11px] text-slate-500 font-medium">{label}</span>
+    <span className="mt-1 block text-sm font-extrabold text-slate-900 truncate">{value}</span>
+  </div>
+);
+
+const ReportList: React.FC<{
+  title: string;
+  rows: { label: string; value: string }[];
+  footer?: string;
+}> = ({ title, rows, footer }) => (
+  <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+    <h2 className="text-base font-bold text-slate-900">{title}</h2>
+    <div className="mt-3 divide-y divide-slate-100">
+      {rows.length === 0 ? (
+        <p className="py-3 text-xs text-slate-500">No data available.</p>
+      ) : (
+        rows.map((row) => (
+          <div key={`${row.label}-${row.value}`} className="py-2 flex items-center justify-between gap-3 text-xs">
+            <span className="font-semibold text-slate-700 truncate">{row.label}</span>
+            <span className="font-bold text-slate-900 text-right">{row.value}</span>
+          </div>
+        ))
+      )}
+    </div>
+    {footer && <p className="mt-3 pt-3 border-t border-slate-100 text-xs font-bold text-orange-600">{footer}</p>}
+  </div>
+);
