@@ -360,9 +360,7 @@ export const KitchenDashboard: React.FC = () => {
                   {/* Kitchen Action Buttons */}
                   <div className="flex items-center justify-between pt-1">
                     <button
-                      onClick={() =>
-                        showToast(`Reported kitchen delay for Order ${order.tokenNumber}`)
-                      }
+                      onClick={() => updateOrderStatus(order.id, "Delayed")}
                       className="text-xs font-bold text-red-600 hover:underline flex items-center gap-1"
                     >
                       <span className="material-symbols-outlined text-[15px]">
