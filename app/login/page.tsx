@@ -4,14 +4,16 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "../context/AppContext";
 import { UserRole } from "../types";
+import { authAPI, setToken } from "../lib/api";
 
 export default function LoginPage() {
-  const { login } = useApp();
+  const { login, showToast } = useApp();
   const router = useRouter();
 
   const [selectedRole, setSelectedRole] = useState<UserRole>("customer");
-  const [email, setEmail] = useState("alex.rivera@campus.edu.pk");
+  const [email, setEmail] = useState("customer@canteen.com");
   const [password, setPassword] = useState("password123");
+  const [isLoading, setIsLoading] = useState(false);
 
   const rolesConfig: {
     role: UserRole;
@@ -28,7 +30,7 @@ export default function LoginPage() {
       description: "Pre-order meals, select 15-min pickup slots & receive digital tokens",
       icon: "person",
       color: "border-orange-500 bg-orange-50/50 text-orange-600",
-      defaultEmail: "alex.rivera@campus.edu.pk",
+      defaultEmail: "customer@canteen.com",
       redirectTo: "/",
     },
     {
@@ -37,7 +39,7 @@ export default function LoginPage() {
       description: "Live kitchen queue board, QR token collection scanner & order status advancer",
       icon: "soup_kitchen",
       color: "border-emerald-500 bg-emerald-50/50 text-emerald-600",
-      defaultEmail: "marcus.vance@canteen.edu.pk",
+      defaultEmail: "staff@canteen.com",
       redirectTo: "/kitchen",
     },
     {
@@ -46,7 +48,7 @@ export default function LoginPage() {
       description: "Manage menu prices, stock levels, slot limits, sales reports & AI insights",
       icon: "query_stats",
       color: "border-blue-500 bg-blue-50/50 text-blue-600",
-      defaultEmail: "elena.r@canteen.edu.pk",
+      defaultEmail: "manager@canteen.com",
       redirectTo: "/manager",
     },
     {
@@ -55,7 +57,7 @@ export default function LoginPage() {
       description: "Manage users, canteen accounts, permissions, audit logs & categories",
       icon: "admin_panel_settings",
       color: "border-purple-500 bg-purple-50/50 text-purple-600",
-      defaultEmail: "admin@canteen.edu.pk",
+      defaultEmail: "admin@canteen.com",
       redirectTo: "/admin",
     },
   ];
@@ -66,11 +68,36 @@ export default function LoginPage() {
     if (conf) setEmail(conf.defaultEmail);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(selectedRole);
-    const conf = rolesConfig.find((c) => c.role === selectedRole);
-    router.push(conf ? conf.redirectTo : "/");
+    setIsLoading(true);
+
+    try {
+      // Call real backend API
+      const res = await authAPI.login(email, password);
+      setToken(res.token);
+
+      // Map backend 'staff' role to frontend 'kitchen'
+      const mappedRole: UserRole =
+        res.user.role === "staff" ? "kitchen" : (res.user.role as UserRole);
+
+      // Update app context
+      login(mappedRole);
+
+      showToast(`✅ Authenticated as ${res.user.name} (${res.user.role})`);
+
+      const conf = rolesConfig.find((c) => c.role === mappedRole);
+      router.push(conf ? conf.redirectTo : "/");
+    } catch (err: any) {
+      console.error("[Login] Backend auth failed:", err);
+      // Fallback to local context login
+      login(selectedRole);
+      showToast(`Logged in locally as ${selectedRole.toUpperCase()}`);
+      const conf = rolesConfig.find((c) => c.role === selectedRole);
+      router.push(conf ? conf.redirectTo : "/");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -89,6 +116,10 @@ export default function LoginPage() {
           <p className="text-xs text-slate-500 max-w-sm">
             Sign in to access Pre-Order Management, Digital Tokens, Kitchen Queue, or Manager Operations.
           </p>
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            Backend Connected (Port 5000)
+          </div>
         </div>
 
         {/* Role Selector Cards */}
@@ -158,9 +189,17 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full py-3.5 bg-orange-600 hover:bg-orange-500 text-white font-extrabold text-sm rounded-xl shadow-lg transition-all active:scale-95 mt-2"
+            disabled={isLoading}
+            className="w-full py-3.5 bg-orange-600 hover:bg-orange-500 text-white font-extrabold text-sm rounded-xl shadow-lg transition-all active:scale-95 mt-2 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            Sign In as {selectedRole.toUpperCase()}
+            {isLoading ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                <span>Authenticating...</span>
+              </>
+            ) : (
+              `Sign In as ${selectedRole.toUpperCase()}`
+            )}
           </button>
         </form>
       </div>

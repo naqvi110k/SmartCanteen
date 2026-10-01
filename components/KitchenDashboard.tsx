@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useApp } from "../app/context/AppContext";
 import { OrderStatus } from "../app/types";
+import { collectionAPI } from "../app/lib/api";
 
 export const KitchenDashboard: React.FC = () => {
   const {
@@ -33,39 +34,21 @@ export const KitchenDashboard: React.FC = () => {
     return true;
   });
 
-  const performVerification = (tokenQuery: string) => {
-    if (!tokenQuery.trim()) return;
-    const cleanQuery = tokenQuery.trim().toUpperCase();
+  const handleVerifyQRScan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const tokenOrId = scanTokenInput.trim();
+    if (!tokenOrId) return;
 
-    const targetOrder = orders.find(
-      (o) =>
-        o.tokenNumber.toUpperCase() === cleanQuery ||
-        o.id.toUpperCase() === cleanQuery
-    );
-
-    if (targetOrder) {
-      if (targetOrder.status === "Collected" || targetOrder.status === "Completed") {
-        setVerificationResult({
-          success: false,
-          message: `Double Collection Blocked! Token ${targetOrder.tokenNumber} was already collected.`,
-          order: targetOrder,
-        });
-        showToast(`⚠️ Token ${targetOrder.tokenNumber} has ALREADY been collected!`);
-      } else {
-        updateOrderStatus(targetOrder.id, "Collected");
-        setVerificationResult({
-          success: true,
-          message: `Verified & Handed Over! Token ${targetOrder.tokenNumber} marked as Collected.`,
-          order: targetOrder,
-        });
-        showToast(`✅ Verified Token ${targetOrder.tokenNumber}! Marked as COLLECTED.`);
-      }
-    } else {
-      setVerificationResult({
-        success: false,
-        message: `Invalid Token or QR "${tokenQuery}". No matching active order found in database.`,
+    try {
+      const res = await collectionAPI.confirm({
+        token_number: tokenOrId.startsWith("C-") ? tokenOrId : undefined,
+        order_id: !tokenOrId.startsWith("C-") ? tokenOrId : undefined,
       });
-      showToast(`❌ Invalid Token "${tokenQuery}". No matching active order found.`);
+      showToast(`✅ Verified Token ${tokenOrId}! Marked as COMPLETED.`);
+      updateOrderStatus(res.data._id || res.data.order_id, "Completed");
+      setScanTokenInput("");
+    } catch (err: any) {
+      showToast(`⚠️ ${err.message || "Invalid token or order already collected!"}`);
     }
     setScanTokenInput("");
   };

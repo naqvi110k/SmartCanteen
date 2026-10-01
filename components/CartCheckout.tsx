@@ -16,7 +16,13 @@ export const CartCheckout: React.FC = () => {
     placeOrder,
   } = useApp();
 
+  const { isAuthenticated } = useApp();
+
   const handleConfirmOrder = () => {
+    if (!isAuthenticated) {
+      router.push("/login");
+      return;
+    }
     const res = placeOrder(selectedSlotId);
     if (res) {
       router.push("/live-order");

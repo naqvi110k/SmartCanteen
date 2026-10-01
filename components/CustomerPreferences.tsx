@@ -4,7 +4,7 @@ import React from "react";
 import { useApp } from "../app/context/AppContext";
 
 export const CustomerPreferences: React.FC = () => {
-  const { preferences, updatePreferences, showToast } = useApp();
+  const { preferences, updatePreferences, currentUser, showToast } = useApp();
 
   return (
     <div className="max-w-4xl mx-auto w-full px-4 pt-4 pb-32 flex flex-col gap-6">
@@ -16,12 +16,8 @@ export const CustomerPreferences: React.FC = () => {
 
         {/* Avatar */}
         <div className="relative mb-3">
-          <div className="w-24 h-24 rounded-full overflow-hidden bg-slate-100 shadow-md border-2 border-white">
-            <img
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"
-              alt="Alex Rivera"
-              className="w-full h-full object-cover"
-            />
+          <div className="w-24 h-24 rounded-full overflow-hidden bg-slate-100 shadow-md border-2 border-white flex items-center justify-center font-headline font-extrabold text-2xl text-slate-800 bg-gradient-to-tr from-orange-200 to-amber-100">
+            {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : "U"}
           </div>
           <button
             onClick={() => showToast("Profile picture editor opened")}
@@ -34,18 +30,18 @@ export const CustomerPreferences: React.FC = () => {
         </div>
 
         <h1 className="font-headline text-xl font-extrabold text-slate-900 tracking-tight">
-          Alex Rivera
+          {currentUser.name || "Student Customer"}
         </h1>
 
         <div className="mt-1 inline-flex items-center gap-1.5 bg-slate-100 px-3 py-1 rounded-full text-slate-700">
           <span className="material-symbols-outlined text-[16px] text-blue-600">
             school
           </span>
-          <span className="text-xs font-bold">MUET - 24CS031</span>
+          <span className="text-xs font-bold">{currentUser.studentId || "MUET - 24CS031"}</span>
         </div>
 
         <div className="mt-1 flex items-center gap-1 text-slate-500 text-xs">
-          <span>alex.rivera@campus.edu.pk</span>
+          <span>{currentUser.email || "student@canteen.com"}</span>
           <span className="material-symbols-outlined text-[16px] text-emerald-600">
             verified
           </span>
