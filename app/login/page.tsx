@@ -100,11 +100,11 @@ export default function LoginPage() {
       const conf = rolesConfig.find((c) => c.role === mappedRole);
       router.push(conf ? conf.redirectTo : "/");
     } catch (err: any) {
-      console.error("[Login] Backend auth failed:", err);
       if (isSignup) {
         showToast(err.message || "Could not create your account.");
         return;
       }
+      console.error("[Login] Backend auth failed:", err);
       // Fallback to local context login
       login(selectedRole);
       showToast(`Logged in locally as ${selectedRole.toUpperCase()}`);
