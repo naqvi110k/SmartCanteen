@@ -194,9 +194,9 @@ export const LiveOrderTracker: React.FC = () => {
             <span className="text-slate-800">
               Est. Ready Target: {activeOrder.estimatedReadyTime}
             </span>
-            <span className="text-emerald-600 font-extrabold flex items-center gap-0.5">
+            <span className={`${activeOrder.isDelayed ? "text-red-600" : "text-emerald-600"} font-extrabold flex items-center gap-0.5`}>
               <span className="material-symbols-outlined text-[14px]">bolt</span>
-              On Time
+              {activeOrder.isDelayed ? "Delayed" : "On Time"}
             </span>
           </div>
 

@@ -386,6 +386,20 @@ export const ManagerDashboard: React.FC = () => {
             }))}
             footer={`Delayed orders: ${managementReports.delayedOrderPercentage || "0%"}`}
           />
+          <ReportList
+            title="Orders by time"
+            rows={Object.entries(managementReports.ordersByTime || {}).map(([label, value]) => ({
+              label,
+              value: `${value} orders`,
+            }))}
+          />
+          <ReportList
+            title="Item availability history"
+            rows={(managementReports.availabilityHistory || []).slice(0, 6).map((row: any) => ({
+              label: row.itemId || "Menu item",
+              value: `${row.status} (${row.quantity} units)`,
+            }))}
+          />
         </div>
       )}
 
