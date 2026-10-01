@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { io, Socket } from "socket.io-client";
 import {
   MenuItem,
   CartItem,
@@ -22,6 +23,8 @@ export interface UserAccount {
   smartCardBalance?: number;
   studentId?: string;
 }
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const MOCK_USERS: Record<UserRole, UserAccount> = {
   customer: {
@@ -417,6 +420,86 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     notifyOnReady: true,
     notifyOnDelay: true,
   });
+
+  // Connect to backend REST API & WebSockets dynamically
+  useEffect(() => {
+    // 1. Fetch initial menu from Backend API
+    const fetchBackendData = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/menu`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+            const mappedMenu: MenuItem[] = json.data.map((item: any) => ({
+              id: item._id || item.item_id,
+              name: item.item_name,
+              category: item.category || "Meals",
+              price: item.price,
+              image: item.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80",
+              availableQuantity: item.available_quantity,
+              preparationTime: item.preparation_time,
+              status: item.status || "Available",
+              description: item.description || "Fresh cafeteria meal.",
+              isVegetarian: item.category === "Beverages" || item.item_name.toLowerCase().includes("salad") || item.item_name.toLowerCase().includes("fries"),
+              isFastPrep: item.preparation_time <= 5,
+              underFive: item.price < 5,
+              isPopular: true,
+            }));
+            setMenu(mappedMenu);
+          }
+        }
+      } catch (e) {
+        console.info("[API Sync] Backend offline or using fallback cache.");
+      }
+    };
+
+    fetchBackendData();
+
+    // 2. Initialize Socket.io connection for real-time WebSocket events
+    const socket: Socket = io(API_BASE_URL, {
+      transports: ["websocket", "polling"],
+      reconnection: true,
+    });
+
+    socket.on("connect", () => {
+      console.log("[Socket.io WebSockets] Client connected to live server:", socket.id);
+      socket.emit("join_kitchen_room");
+    });
+
+    // Listen for live order updates dispatched from kitchen or backend cron
+    socket.on("order_status_updated", (payload: any) => {
+      if (payload && payload.orderId) {
+        setOrders((prev) =>
+          prev.map((ord) => {
+            if (ord.id === payload.orderId || ord.tokenNumber === payload.tokenNumber) {
+              const newStatus = payload.status as OrderStatus;
+              let progress = ord.prepProgress;
+              if (newStatus === "Accepted") progress = 35;
+              if (newStatus === "Preparing") progress = 65;
+              if (newStatus === "Ready") progress = 100;
+              if (newStatus === "Collected" || newStatus === "Completed") progress = 100;
+              return { ...ord, status: newStatus, prepProgress: progress };
+            }
+            return ord;
+          })
+        );
+        showToast(`⚡ Real-time Order Alert: Token #${payload.tokenNumber || payload.orderId} is now ${payload.status}!`);
+      }
+    });
+
+    // Listen for live inventory stock changes
+    socket.on("menu_stock_updated", (payload: any) => {
+      if (payload && payload.itemId) {
+        setMenu((prev) =>
+          prev.map((m) => (m.id === payload.itemId ? { ...m, availableQuantity: payload.availableQuantity, status: payload.status } : m))
+        );
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
