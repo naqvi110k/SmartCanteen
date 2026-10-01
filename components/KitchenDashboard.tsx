@@ -16,6 +16,13 @@ export const KitchenDashboard: React.FC = () => {
 
   const [scanTokenInput, setScanTokenInput] = useState("");
   const [selectedFilter, setSelectedFilter] = useState<string>("Active");
+  const [isScannerModalOpen, setIsScannerModalOpen] = useState(false);
+  const [isScanningSimulated, setIsScanningSimulated] = useState(false);
+  const [verificationResult, setVerificationResult] = useState<{
+    success: boolean;
+    message: string;
+    order?: any;
+  } | null>(null);
 
   const filteredOrders = orders.filter((o) => {
     if (selectedFilter === "Active")
@@ -43,10 +50,148 @@ export const KitchenDashboard: React.FC = () => {
     } catch (err: any) {
       showToast(`⚠️ ${err.message || "Invalid token or order already collected!"}`);
     }
+    setScanTokenInput("");
+  };
+
+  const handleVerifyQRScan = (e: React.FormEvent) => {
+    e.preventDefault();
+    performVerification(scanTokenInput);
+  };
+
+  const simulateOpticalScan = (token: string) => {
+    setIsScanningSimulated(true);
+    setTimeout(() => {
+      setIsScanningSimulated(false);
+      performVerification(token);
+    }, 1200);
   };
 
   return (
     <div className="max-w-7xl mx-auto w-full px-4 pt-4 pb-32 flex flex-col gap-6">
+      {/* Optical / Digital Scanner Modal */}
+      {isScannerModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 shadow-2xl flex flex-col gap-5 relative overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+                  <span className="material-symbols-outlined text-[24px]">
+                    qr_code_scanner
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <h3 className="text-base font-extrabold text-white">
+                    Collection Counter Digital Scanner
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Scan Customer QR or Enter Token Number (e.g. C-023)
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsScannerModalOpen(false);
+                  setVerificationResult(null);
+                }}
+                className="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Live Camera / Scanner Viewport View */}
+            <div className="relative w-full h-56 bg-slate-950 rounded-2xl border-2 border-dashed border-emerald-500/40 flex flex-col items-center justify-center p-4 overflow-hidden">
+              {/* Laser Animation Bar */}
+              <div className="absolute inset-x-8 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent z-10 laser-scanner-line shadow-[0_0_15px_#10b981]"></div>
+
+              {isScanningSimulated ? (
+                <div className="flex flex-col items-center gap-2 text-emerald-400 animate-pulse">
+                  <span className="material-symbols-outlined text-[44px]">
+                    document_scanner
+                  </span>
+                  <span className="text-xs font-mono font-bold">
+                    DECODING DIGITAL TOKEN QR...
+                  </span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <div className="w-28 h-28 border border-slate-700/60 rounded-xl flex items-center justify-center p-2 bg-slate-900/50">
+                    <span className="material-symbols-outlined text-[40px] text-slate-600">
+                      qr_code_2
+                    </span>
+                  </div>
+                  <span className="text-xs text-slate-400 font-medium">
+                    Point counter optical sensor at student phone screen
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Quick One-Click Simulated Scans for Live Demo */}
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Quick Demo Tokens in Queue:
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {orders.slice(0, 4).map((ord) => (
+                  <button
+                    key={ord.id}
+                    onClick={() => simulateOpticalScan(ord.tokenNumber)}
+                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-emerald-600/30 text-emerald-400 border border-slate-700 text-xs font-mono font-bold transition-all flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">
+                      qr_code
+                    </span>
+                    Scan {ord.tokenNumber} ({ord.status})
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Manual Entry Form */}
+            <form onSubmit={handleVerifyQRScan} className="flex gap-2">
+              <input
+                type="text"
+                value={scanTokenInput}
+                onChange={(e) => setScanTokenInput(e.target.value)}
+                placeholder="Type Token (e.g. C-023 or Order ID)..."
+                className="flex-1 h-11 px-4 bg-slate-950 border border-slate-700 text-white placeholder:text-slate-500 rounded-xl text-sm font-mono outline-none focus:border-emerald-500"
+              />
+              <button
+                type="submit"
+                className="px-5 h-11 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-emerald-900/30 shrink-0"
+              >
+                Verify & Hand Over
+              </button>
+            </form>
+
+            {/* Verification Alert Banner */}
+            {verificationResult && (
+              <div
+                className={`p-4 rounded-2xl text-xs font-bold border flex items-start gap-3 ${
+                  verificationResult.success
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                    : "bg-red-500/10 border-red-500/30 text-red-300"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[20px] shrink-0">
+                  {verificationResult.success ? "check_circle" : "error"}
+                </span>
+                <div className="flex flex-col gap-1">
+                  <span>{verificationResult.message}</span>
+                  {verificationResult.order && (
+                    <span className="text-[11px] text-slate-400 font-normal">
+                      Customer: {verificationResult.order.customerName} • Total: ${verificationResult.order.totalAmount.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Kitchen Banner Header */}
       <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-xl border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -60,8 +205,9 @@ export const KitchenDashboard: React.FC = () => {
               <h1 className="text-xl font-extrabold text-white font-headline">
                 Kitchen Staff Display & Queue
               </h1>
-              <span className="bg-emerald-500/20 text-emerald-400 font-bold text-[10px] uppercase px-2 py-0.5 rounded-full border border-emerald-500/30">
-                Live Kitchen Sync
+              <span className="bg-emerald-500/20 text-emerald-400 font-bold text-[10px] uppercase px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                Socket.io Live Sync
               </span>
             </div>
             <span className="text-xs text-slate-400">
@@ -70,30 +216,18 @@ export const KitchenDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick QR Scanner Simulator Form */}
-        <form
-          onSubmit={handleVerifyQRScan}
-          className="flex items-center gap-2 bg-slate-800 p-1.5 rounded-xl border border-slate-700 w-full md:w-auto"
-        >
-          <div className="relative flex-1 flex items-center">
-            <span className="material-symbols-outlined absolute left-3 text-slate-400 text-[18px]">
+        {/* Dedicated Digital Scanner Button */}
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <button
+            onClick={() => setIsScannerModalOpen(true)}
+            className="w-full md:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-emerald-900/30 flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[18px]">
               qr_code_scanner
             </span>
-            <input
-              type="text"
-              value={scanTokenInput}
-              onChange={(e) => setScanTokenInput(e.target.value)}
-              placeholder="Scan/Type Token (e.g. C-023)..."
-              className="w-full md:w-56 h-9 pl-9 pr-3 bg-transparent text-white placeholder:text-slate-500 text-xs font-mono outline-none"
-            />
-          </div>
-          <button
-            type="submit"
-            className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-all shrink-0"
-          >
-            Verify Pickup
+            <span>Open Digital Token / QR Scanner</span>
           </button>
-        </form>
+        </div>
       </div>
 
       {/* Main Grid: Queue & Menu Availability Toggle */}

@@ -45,23 +45,26 @@ export const LiveOrderTracker: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto w-full px-4 pt-4 pb-32 flex flex-col gap-5">
-      {/* Live Kitchen Banner */}
-      <div className="w-full bg-orange-50 border border-orange-200 text-orange-950 rounded-2xl p-4 shadow-sm flex flex-col gap-2 relative overflow-hidden">
+      {/* Live Kitchen Banner with WebSocket Indicator */}
+      <div className="w-full bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 text-orange-950 rounded-2xl p-4 shadow-sm flex flex-col gap-2 relative overflow-hidden">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-600 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-600"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-600"></span>
             </span>
-            <span className="text-xs font-extrabold uppercase tracking-wider text-orange-900">
-              Live Kitchen Queue Sync
+            <span className="text-xs font-extrabold uppercase tracking-wider text-orange-900 flex items-center gap-1.5">
+              <span>Real-Time WebSocket Sync</span>
+              <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-mono font-bold">
+                LIVE
+              </span>
             </span>
           </div>
-          <span className="text-[11px] font-bold bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full text-orange-900 shadow-sm flex items-center gap-1">
-            <span className="material-symbols-outlined text-[13px]">
+          <span className="text-[11px] font-bold bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-orange-900 shadow-sm flex items-center gap-1 border border-orange-200/60">
+            <span className="material-symbols-outlined text-[13px] text-orange-600">
               schedule
             </span>
-            Step {Math.max(1, currentStepIdx + 1)} of 5
+            Status {Math.max(1, currentStepIdx + 1)} of 5
           </span>
         </div>
 
