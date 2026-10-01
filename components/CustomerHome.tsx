@@ -12,6 +12,9 @@ export const CustomerHome: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [maxPrice, setMaxPrice] = useState("");
+  const [availability, setAvailability] = useState("All");
+  const [maxPrepTime, setMaxPrepTime] = useState("");
 
   // Categories include backend's "Fast Food" + others
   const categories = [
@@ -38,6 +41,10 @@ export const CustomerHome: React.FC = () => {
 
     // Dietary Preferences (from settings)
     if (preferences.vegetarianOnly && !item.isVegetarian) return false;
+
+    if (maxPrice && item.price > Number(maxPrice)) return false;
+    if (availability !== "All" && item.status !== availability) return false;
+    if (maxPrepTime && item.preparationTime > Number(maxPrepTime)) return false;
 
     // Selected Category
     if (selectedCategory === "Popular 🔥" && !item.isPopular) return false;
@@ -72,7 +79,7 @@ export const CustomerHome: React.FC = () => {
     // Quick Filter chips
     if (activeFilter === "fast" && item.preparationTime > 10) return false;
     if (activeFilter === "veg" && !item.isVegetarian) return false;
-    if (activeFilter === "cheap" && item.price >= 5) return false;
+    if (activeFilter === "cheap" && item.price >= 500) return false;
 
     return true;
   });
@@ -154,7 +161,7 @@ export const CustomerHome: React.FC = () => {
                 : "bg-slate-100 text-slate-700 hover:bg-slate-200"
             }`}
           >
-            <span>🏷️ Under $5</span>
+              <span>🏷️ Under 500</span>
           </button>
           {activeFilter && (
             <button
@@ -164,6 +171,27 @@ export const CustomerHome: React.FC = () => {
               Clear Filter
             </button>
           )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 max-w-7xl mx-auto w-full">
+          <select value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700">
+            <option value="">Any price</option>
+            <option value="500">Under 500</option>
+            <option value="1000">Under 1,000</option>
+            <option value="2000">Under 2,000</option>
+          </select>
+          <select value={availability} onChange={(e) => setAvailability(e.target.value)} className="h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700">
+            <option value="All">Any availability</option>
+            <option value="Available">Available</option>
+            <option value="Limited">Limited</option>
+            <option value="Sold Out">Sold out</option>
+          </select>
+          <select value={maxPrepTime} onChange={(e) => setMaxPrepTime(e.target.value)} className="h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700">
+            <option value="">Any prep time</option>
+            <option value="5">Up to 5 min</option>
+            <option value="10">Up to 10 min</option>
+            <option value="15">Up to 15 min</option>
+          </select>
         </div>
       </div>
 
