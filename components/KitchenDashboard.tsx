@@ -34,9 +34,8 @@ export const KitchenDashboard: React.FC = () => {
     return true;
   });
 
-  const handleVerifyQRScan = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const tokenOrId = scanTokenInput.trim();
+  const performVerification = async (value: string) => {
+    const tokenOrId = value.trim();
     if (!tokenOrId) return;
 
     try {

@@ -2,14 +2,13 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useApp } from "../app/context/AppContext";
 import { UserRole } from "../app/types";
 
 export const Header: React.FC = () => {
   const {
     role,
-    setRole,
     cartCount,
     activeOrder,
     toastMessage,
@@ -19,20 +18,15 @@ export const Header: React.FC = () => {
   } = useApp();
 
   const pathname = usePathname();
-  const router = useRouter();
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
+  const canAccessKitchen = isAuthenticated && ["kitchen", "manager", "admin"].includes(role);
+  const canAccessAdmin = isAuthenticated && role === "admin";
 
   const roleLabels: Record<UserRole, { title: string; badge: string; bg: string; defaultRoute: string }> = {
     customer: { title: "Customer / Student", badge: "Student Pass", bg: "bg-orange-500", defaultRoute: "/" },
     kitchen: { title: "Kitchen / Staff", badge: "Chef Station", bg: "bg-emerald-600", defaultRoute: "/kitchen" },
     manager: { title: "Canteen Manager", badge: "Manager AI", bg: "bg-blue-600", defaultRoute: "/manager" },
     admin: { title: "System Admin", badge: "Superuser", bg: "bg-purple-600", defaultRoute: "/admin" },
-  };
-
-  const handleRoleSwitch = (newRole: UserRole) => {
-    setRole(newRole);
-    setRoleMenuOpen(false);
-    router.push(roleLabels[newRole].defaultRoute);
   };
 
   return (
@@ -131,18 +125,20 @@ export const Header: React.FC = () => {
           )}
 
           {/* Navigation Links for Staff / Manager / Admin */}
-          {role !== "customer" && (
+          {canAccessKitchen && (
             <div className="hidden md:flex items-center gap-2 text-xs font-bold">
-              <Link
-                href="/kitchen"
-                className={`px-3.5 py-2 rounded-xl border transition-all ${
-                  pathname === "/kitchen"
-                    ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200"
-                }`}
-              >
-                Kitchen Board
-              </Link>
+              {(["kitchen", "manager", "admin"] as UserRole[]).includes(role) && (
+                <Link
+                  href="/kitchen"
+                  className={`px-3.5 py-2 rounded-xl border transition-all ${
+                    pathname === "/kitchen"
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200"
+                  }`}
+                >
+                  Kitchen Board
+                </Link>
+              )}
               <Link
                 href="/manager"
                 className={`px-3.5 py-2 rounded-xl border transition-all ${
@@ -153,16 +149,18 @@ export const Header: React.FC = () => {
               >
                 Manager Ops & AI
               </Link>
-              <Link
-                href="/admin"
-                className={`px-3.5 py-2 rounded-xl border transition-all ${
-                  pathname === "/admin"
-                    ? "bg-purple-600 text-white border-purple-600 shadow-sm"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200"
-                }`}
-              >
-                Admin Console
-              </Link>
+              {canAccessAdmin && (
+                <Link
+                  href="/admin"
+                  className={`px-3.5 py-2 rounded-xl border transition-all ${
+                    pathname === "/admin"
+                      ? "bg-purple-600 text-white border-purple-600 shadow-sm"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200"
+                  }`}
+                >
+                  Admin Console
+                </Link>
+              )}
             </div>
           )}
 
@@ -235,29 +233,9 @@ export const Header: React.FC = () => {
                       <p className="text-[11px] text-slate-400">{currentUser.email}</p>
                     </div>
 
-                    <div className="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-1">
-                      Switch User Role
+                    <div className="px-4 py-3 text-xs font-semibold text-slate-600">
+                      Signed in as {roleLabels[role].title}
                     </div>
-                    {(["customer", "kitchen", "manager", "admin"] as UserRole[]).map(
-                      (r) => (
-                        <button
-                          key={r}
-                          onClick={() => handleRoleSwitch(r)}
-                          className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center justify-between hover:bg-slate-50 transition-colors ${
-                            role === r
-                              ? "text-orange-600 font-bold bg-orange-50/50"
-                              : "text-slate-700"
-                          }`}
-                        >
-                          <span>{roleLabels[r].title}</span>
-                          {role === r && (
-                            <span className="material-symbols-outlined text-[16px] text-orange-600">
-                              check
-                            </span>
-                          )}
-                        </button>
-                      )
-                    )}
 
                     <div className="pt-2 mt-2 border-t border-slate-100 px-2">
                       <Link

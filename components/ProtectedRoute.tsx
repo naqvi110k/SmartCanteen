@@ -43,7 +43,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  if (!allowedRoles.includes(role)) {
+  if (!allowedRoles.includes(currentUser.role)) {
     return (
       <div className="max-w-md mx-auto my-16 px-4 py-12 bg-white rounded-3xl shadow-xl border border-slate-100 text-center flex flex-col items-center gap-4">
         <div className="w-16 h-16 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center">
@@ -57,7 +57,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           </h2>
           <p className="text-xs text-slate-500 max-w-xs">
             Your current account (<strong>{currentUser.name}</strong> •{" "}
-            <span className="uppercase text-orange-600 font-bold">{role}</span>) does not have permission to access the <strong>{pageTitle}</strong> section.
+            <span className="uppercase text-orange-600 font-bold">{currentUser.role}</span>) does not have permission to access the <strong>{pageTitle}</strong> section.
           </p>
         </div>
 
