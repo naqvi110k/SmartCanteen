@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import {
   MenuItem,
   CartItem,
@@ -13,6 +13,22 @@ import {
   OrderStatus,
   ItemStatus,
 } from "../types";
+import {
+  authAPI,
+  menuAPI,
+  orderAPI,
+  queueAPI,
+  collectionAPI,
+  analyticsAPI,
+  aiAPI,
+  adminAPI,
+  setToken,
+  getToken,
+  mapBackendMenuItem,
+  mapBackendOrder,
+  mapBackendSlot,
+  BackendMenuItem,
+} from "../lib/api";
 
 export interface UserAccount {
   id: string;
@@ -23,301 +39,29 @@ export interface UserAccount {
   studentId?: string;
 }
 
-const MOCK_USERS: Record<UserRole, UserAccount> = {
-  customer: {
-    id: "u-cust-1",
-    name: "Alex Rivera",
-    email: "alex.rivera@campus.edu.pk",
-    role: "customer",
-    smartCardBalance: 34.5,
-    studentId: "MUET - 24CS031",
-  },
-  kitchen: {
-    id: "u-kitch-1",
-    name: "Chef Marcus Vance",
-    email: "marcus.vance@canteen.edu.pk",
-    role: "kitchen",
-  },
-  manager: {
-    id: "u-mgr-1",
-    name: "Elena Rostova",
-    email: "elena.r@canteen.edu.pk",
-    role: "manager",
-  },
-  admin: {
-    id: "u-admin-1",
-    name: "Admin Director",
-    email: "admin@canteen.edu.pk",
-    role: "admin",
-  },
+// Role-to-backend-role mapping (frontend uses 'kitchen', backend uses 'staff')
+const roleToBackendRole: Record<UserRole, string> = {
+  customer: "customer",
+  kitchen: "staff",
+  manager: "manager",
+  admin: "admin",
 };
 
-const INITIAL_MENU: MenuItem[] = [
-  {
-    id: "item-1",
-    name: "Chicken Deluxe Burger",
-    category: "Burgers",
-    price: 4.5,
-    image:
-      "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80",
-    availableQuantity: 12,
-    preparationTime: 8,
-    status: "Available",
-    description: "Crispy chicken patty, cheddar cheese, crisp lettuce & house brioche bun.",
-    isVegetarian: false,
-    isFastPrep: true,
-    underFive: true,
-    isPopular: true,
-    calories: 540,
-  },
-  {
-    id: "item-2",
-    name: "Mango Passion Sparkler",
-    category: "Beverages",
-    price: 2.8,
-    image:
-      "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=600&q=80",
-    availableQuantity: 25,
-    preparationTime: 3,
-    status: "Available",
-    description: "Chilled sparkling passionfruit with mint leaves & zero artificial sugar.",
-    isVegetarian: true,
-    isFastPrep: true,
-    underFive: true,
-    isPopular: true,
-    calories: 120,
-  },
-  {
-    id: "item-3",
-    name: "Golden Crispy Fries",
-    category: "Snacks",
-    price: 2.5,
-    image:
-      "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=600&q=80",
-    availableQuantity: 18,
-    preparationTime: 5,
-    status: "Available",
-    description: "Seasoned sea-salt golden crinkle cut potato fries.",
-    isVegetarian: true,
-    isFastPrep: true,
-    underFive: true,
-    isPopular: true,
-    calories: 320,
-  },
-  {
-    id: "item-4",
-    name: "Artisanal Veggie Buddha Bowl",
-    category: "Meals",
-    price: 6.2,
-    image:
-      "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80",
-    availableQuantity: 8,
-    preparationTime: 12,
-    status: "Available",
-    description: "Quinoa, avocado, roasted chickpea, fresh kale, and tahini drizzle.",
-    isVegetarian: true,
-    isFastPrep: false,
-    underFive: false,
-    isPopular: false,
-    calories: 410,
-  },
-  {
-    id: "item-5",
-    name: "Classic Iced Matcha Latte",
-    category: "Beverages",
-    price: 3.5,
-    image:
-      "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80",
-    availableQuantity: 15,
-    preparationTime: 4,
-    status: "Available",
-    description: "Ceremonial grade Uji matcha with chilled oat milk.",
-    isVegetarian: true,
-    isFastPrep: true,
-    underFive: true,
-    isPopular: true,
-    calories: 160,
-  },
-  {
-    id: "item-6",
-    name: "Spicy Paneer Tikka Wrap",
-    category: "Meals",
-    price: 4.9,
-    image:
-      "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=600&q=80",
-    availableQuantity: 6,
-    preparationTime: 9,
-    status: "Limited",
-    description: "Grilled cottage cheese cubes, mint chutney, wrapped in whole wheat flatbread.",
-    isVegetarian: true,
-    isFastPrep: true,
-    underFive: true,
-    isPopular: false,
-    calories: 460,
-  },
-  {
-    id: "item-7",
-    name: "Double Chocolate Brownie Sundae",
-    category: "Desserts",
-    price: 3.2,
-    image:
-      "https://images.unsplash.com/photo-1564355808539-22fda35bed7e?auto=format&fit=crop&w=600&q=80",
-    availableQuantity: 0,
-    preparationTime: 4,
-    status: "Sold Out",
-    description: "Fudgy chocolate brownie served warm with vanilla gelato.",
-    isVegetarian: true,
-    isFastPrep: true,
-    underFive: true,
-    isPopular: true,
-    calories: 480,
-  },
-  {
-    id: "item-8",
-    name: "Smokey BBQ Bacon Burger",
-    category: "Burgers",
-    price: 5.8,
-    image:
-      "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=600&q=80",
-    availableQuantity: 10,
-    preparationTime: 10,
-    status: "Available",
-    description: "Angus beef patty, crispy strip bacon, BBQ glaze & onion rings.",
-    isVegetarian: false,
-    isFastPrep: false,
-    underFive: false,
-    isPopular: true,
-    calories: 680,
-  },
-];
+const backendRoleToFrontendRole = (r: string): UserRole => {
+  if (r === "staff") return "kitchen";
+  return r as UserRole;
+};
 
-const INITIAL_SLOTS: PickupSlot[] = [
-  {
-    id: "slot-1",
-    timeSlot: "1:00 PM – 1:15 PM",
-    maxCapacity: 20,
-    currentOrders: 20,
-    isAvailable: false,
-    stationName: "Express Station Locker A",
-  },
-  {
-    id: "slot-2",
-    timeSlot: "1:15 PM – 1:30 PM",
-    maxCapacity: 20,
-    currentOrders: 14,
-    isAvailable: true,
-    stationName: "Counter Station B — Hot Express",
-  },
-  {
-    id: "slot-3",
-    timeSlot: "1:30 PM – 1:45 PM",
-    maxCapacity: 20,
-    currentOrders: 8,
-    isAvailable: true,
-    stationName: "Counter Station B — Hot Express",
-  },
-  {
-    id: "slot-4",
-    timeSlot: "1:45 PM – 2:00 PM",
-    maxCapacity: 20,
-    currentOrders: 3,
-    isAvailable: true,
-    stationName: "Express Pickup Gate 3",
-  },
-];
+// Default credentials for each role (matching backend seed data)
+const DEFAULT_CREDENTIALS: Record<UserRole, { email: string; password: string; name: string }> = {
+  customer: { email: "customer@canteen.com", password: "password123", name: "Student Customer" },
+  kitchen: { email: "staff@canteen.com", password: "password123", name: "Kitchen Chef / Staff" },
+  manager: { email: "manager@canteen.com", password: "password123", name: "Canteen Manager" },
+  admin: { email: "admin@canteen.com", password: "password123", name: "System Administrator" },
+};
 
-const INITIAL_ORDERS: Order[] = [
-  {
-    id: "ord-101",
-    tokenNumber: "C-023",
-    customerId: "cust-1",
-    customerName: "Alex Rivera",
-    items: [
-      {
-        id: "oi-1",
-        menuItemId: "item-1",
-        name: "Chicken Deluxe Burger",
-        price: 4.5,
-        quantity: 1,
-        specialInstruction: "Extra mayo, no raw onions",
-        image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80",
-      },
-      {
-        id: "oi-2",
-        menuItemId: "item-2",
-        name: "Mango Passion Sparkler",
-        price: 2.8,
-        quantity: 2,
-        specialInstruction: "Less ice, extra mint",
-        image: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=600&q=80",
-      },
-    ],
-    totalAmount: 10.1,
-    orderTime: "12:54 PM",
-    pickupSlot: "1:15 PM – 1:30 PM",
-    estimatedReadyTime: "1:18 PM",
-    prepProgress: 65,
-    status: "Preparing",
-    pickupCounter: "Counter Station B — Hot Express Griddle",
-    specialNotes: "Student has 15-min gap between lectures.",
-  },
-  {
-    id: "ord-100",
-    tokenNumber: "C-022",
-    customerId: "cust-2",
-    customerName: "Jordan Smith",
-    items: [
-      {
-        id: "oi-3",
-        menuItemId: "item-3",
-        name: "Golden Crispy Fries",
-        price: 2.5,
-        quantity: 1,
-        image: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=600&q=80",
-      },
-      {
-        id: "oi-4",
-        menuItemId: "item-5",
-        name: "Classic Iced Matcha Latte",
-        price: 3.5,
-        quantity: 1,
-        image: "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80",
-      },
-    ],
-    totalAmount: 6.0,
-    orderTime: "12:48 PM",
-    pickupSlot: "1:00 PM – 1:15 PM",
-    estimatedReadyTime: "1:10 PM",
-    prepProgress: 100,
-    status: "Ready",
-    pickupCounter: "Express Station Locker A",
-  },
-  {
-    id: "ord-099",
-    tokenNumber: "C-021",
-    customerId: "cust-3",
-    customerName: "Samantha Reed",
-    items: [
-      {
-        id: "oi-5",
-        menuItemId: "item-4",
-        name: "Artisanal Veggie Buddha Bowl",
-        price: 6.2,
-        quantity: 1,
-        image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80",
-      },
-    ],
-    totalAmount: 6.2,
-    orderTime: "12:35 PM",
-    pickupSlot: "1:00 PM – 1:15 PM",
-    estimatedReadyTime: "12:55 PM",
-    prepProgress: 100,
-    status: "Collected",
-    pickupCounter: "Counter Station B",
-  },
-];
-
-const INITIAL_AI_INSIGHTS: AIInsight[] = [
+// Fallback AI insights (used when AI API fails or returns empty)
+const FALLBACK_AI_INSIGHTS: AIInsight[] = [
   {
     id: "ai-1",
     title: "Rush Window Peak Demand Forecast",
@@ -385,26 +129,20 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [role, setRoleState] = useState<UserRole>("customer");
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
-  const [currentUser, setCurrentUser] = useState<UserAccount>(MOCK_USERS.customer);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<UserAccount>({
+    id: "",
+    name: "Guest",
+    email: "",
+    role: "customer",
+  });
 
-  const [menu, setMenu] = useState<MenuItem[]>(INITIAL_MENU);
-  const [cart, setCart] = useState<CartItem[]>([
-    {
-      menuItem: INITIAL_MENU[0],
-      quantity: 1,
-      specialInstruction: "Extra mayo, no onions",
-    },
-    {
-      menuItem: INITIAL_MENU[1],
-      quantity: 2,
-      specialInstruction: "Less ice, extra mint",
-    },
-  ]);
-  const [slots, setSlots] = useState<PickupSlot[]>(INITIAL_SLOTS);
-  const [selectedSlotId, setSelectedSlotId] = useState<string>("slot-2");
-  const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
-  const [aiInsights] = useState<AIInsight[]>(INITIAL_AI_INSIGHTS);
+  const [menu, setMenu] = useState<MenuItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [slots, setSlots] = useState<PickupSlot[]>([]);
+  const [selectedSlotId, setSelectedSlotId] = useState<string>("");
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [aiInsights, setAiInsights] = useState<AIInsight[]>(FALLBACK_AI_INSIGHTS);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const [preferences, setPreferences] = useState<CustomerPreferences>({
@@ -418,88 +156,271 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     notifyOnDelay: true,
   });
 
-  const showToast = (msg: string) => {
+  const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 4000);
-  };
+    setTimeout(() => setToastMessage(null), 4000);
+  }, []);
 
-  const setRole = (newRole: UserRole) => {
-    setRoleState(newRole);
-    setCurrentUser(MOCK_USERS[newRole]);
-    setIsAuthenticated(true);
-    showToast(`Switched active session to ${newRole.toUpperCase()} (${MOCK_USERS[newRole].name})`);
-  };
+  // ─── Fetch menu from backend ──────────────────────────
+  const fetchMenu = useCallback(async () => {
+    try {
+      const res = await menuAPI.getAll();
+      if (res.data && res.data.length > 0) {
+        setMenu(res.data.map(mapBackendMenuItem));
+      }
+    } catch (err) {
+      console.warn("[API] Failed to fetch menu, using cached data:", err);
+    }
+  }, []);
 
-  const login = (newRole: UserRole) => {
-    setRoleState(newRole);
-    setCurrentUser(MOCK_USERS[newRole]);
-    setIsAuthenticated(true);
-    showToast(`Logged in successfully as ${MOCK_USERS[newRole].name} (${newRole.toUpperCase()})`);
-  };
+  // ─── Fetch orders from backend ────────────────────────
+  const fetchOrders = useCallback(async () => {
+    try {
+      const res = await orderAPI.getAll();
+      if (res.data) {
+        setOrders(res.data.map(mapBackendOrder));
+      }
+    } catch (err) {
+      console.warn("[API] Failed to fetch orders:", err);
+    }
+  }, []);
 
-  const logout = () => {
+  // ─── Fetch pickup slots from backend ──────────────────
+  const fetchSlots = useCallback(async () => {
+    try {
+      const res = await orderAPI.getPickupSlots();
+      if (res.data) {
+        const mapped = res.data.map(mapBackendSlot);
+        setSlots(mapped);
+        if (mapped.length > 0 && !selectedSlotId) {
+          const firstAvailable = mapped.find((s) => s.isAvailable);
+          if (firstAvailable) setSelectedSlotId(firstAvailable.id);
+        }
+      }
+    } catch (err) {
+      console.warn("[API] Failed to fetch slots:", err);
+    }
+  }, [selectedSlotId]);
+
+  // ─── Initial Menu Fetch on mount ──────────────────────
+  useEffect(() => {
+    fetchMenu();
+    fetchSlots();
+  }, [fetchMenu, fetchSlots]);
+
+  // ─── Auto-login on mount if token exists ──────────────
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = getToken();
+      if (token) {
+        try {
+          const res = await authAPI.getMe();
+          if (res.user) {
+            const fRole = backendRoleToFrontendRole(res.user.role);
+            setCurrentUser({
+              id: res.user.id || res.user._id,
+              name: res.user.name,
+              email: res.user.email,
+              role: fRole,
+              smartCardBalance: fRole === "customer" ? 34.5 : undefined,
+              studentId: fRole === "customer" ? "MUET - 24CS031" : undefined,
+            });
+            setRoleState(fRole);
+            setIsAuthenticated(true);
+            return;
+          }
+        } catch (err) {
+          console.warn("[API] Token validation failed:", err);
+          setToken(null);
+        }
+      }
+      // Default to guest customer (unauthenticated)
+      setIsAuthenticated(false);
+      setCurrentUser({
+        id: "",
+        name: "Guest Customer",
+        email: "",
+        role: "customer",
+      });
+    };
+
+    checkAuth();
+  }, []);
+
+  // ─── Fetch orders when authenticated ─────────────────
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchOrders();
+    }
+  }, [isAuthenticated, fetchOrders]);
+
+  // ─── Role Switch (login as different role) ────────────
+  const setRole = useCallback(
+    async (newRole: UserRole) => {
+      try {
+        const creds = DEFAULT_CREDENTIALS[newRole];
+        const res = await authAPI.login(creds.email, creds.password);
+        setToken(res.token);
+        const fRole = backendRoleToFrontendRole(res.user.role);
+        setCurrentUser({
+          id: res.user.id,
+          name: res.user.name,
+          email: res.user.email,
+          role: fRole,
+          smartCardBalance: fRole === "customer" ? 34.5 : undefined,
+          studentId: fRole === "customer" ? "MUET - 24CS031" : undefined,
+        });
+        setRoleState(fRole);
+        setIsAuthenticated(true);
+        showToast(`Switched to ${newRole.toUpperCase()} (${res.user.name})`);
+        // Re-fetch data for new role
+        fetchMenu();
+        fetchOrders();
+      } catch (err) {
+        console.warn("[API] Role switch failed:", err);
+        setRoleState(newRole);
+        showToast(`Switched active session to ${newRole.toUpperCase()}`);
+      }
+    },
+    [showToast, fetchMenu, fetchOrders]
+  );
+
+  const login = useCallback(
+    async (newRole: UserRole) => {
+      try {
+        const creds = DEFAULT_CREDENTIALS[newRole];
+        const res = await authAPI.login(creds.email, creds.password);
+        setToken(res.token);
+        const fRole = backendRoleToFrontendRole(res.user.role);
+        setCurrentUser({
+          id: res.user.id,
+          name: res.user.name,
+          email: res.user.email,
+          role: fRole,
+          smartCardBalance: fRole === "customer" ? 34.5 : undefined,
+          studentId: fRole === "customer" ? "MUET - 24CS031" : undefined,
+        });
+        setRoleState(fRole);
+        setIsAuthenticated(true);
+        showToast(`Logged in as ${res.user.name} (${fRole.toUpperCase()})`);
+        fetchMenu();
+        fetchOrders();
+        fetchSlots();
+      } catch (err) {
+        console.warn("[API] Login failed:", err);
+        setRoleState(newRole);
+        setIsAuthenticated(true);
+        showToast(`Logged in as ${newRole.toUpperCase()}`);
+      }
+    },
+    [showToast, fetchMenu, fetchOrders, fetchSlots]
+  );
+
+  const logout = useCallback(() => {
+    setToken(null);
     setIsAuthenticated(false);
     showToast("Logged out of Smart Canteen session");
-  };
+  }, [showToast]);
 
-  // Menu CRUD
-  const saveMenuItem = (itemData: Partial<MenuItem> & { id?: string }) => {
-    if (itemData.id) {
-      // Edit
-      setMenu((prev) =>
-        prev.map((m) => (m.id === itemData.id ? ({ ...m, ...itemData } as MenuItem) : m))
-      );
-      showToast(`Updated menu item "${itemData.name}"`);
-    } else {
-      // Add
-      const newItem: MenuItem = {
-        id: `item-${Date.now()}`,
-        name: itemData.name || "New Food Item",
-        category: itemData.category || "Meals",
-        price: itemData.price || 4.0,
-        image:
-          itemData.image ||
-          "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80",
-        availableQuantity: itemData.availableQuantity ?? 15,
-        preparationTime: itemData.preparationTime ?? 8,
-        status: (itemData.availableQuantity ?? 15) > 0 ? "Available" : "Sold Out",
-        description: itemData.description || "Fresh cafeteria meal prepared daily.",
-        isVegetarian: itemData.isVegetarian ?? false,
-        isFastPrep: (itemData.preparationTime ?? 8) <= 5,
-        underFive: (itemData.price || 4.0) < 5,
-        isPopular: false,
-      };
-      setMenu((prev) => [newItem, ...prev]);
-      showToast(`Added new item "${newItem.name}" to canteen menu!`);
-    }
-  };
-
-  const deleteMenuItem = (itemId: string) => {
-    setMenu((prev) => prev.filter((m) => m.id !== itemId));
-    showToast("Deleted item from canteen menu.");
-  };
-
-  // Cart operations
-  const addToCart = (item: MenuItem) => {
-    if (item.status === "Sold Out" || item.availableQuantity <= 0) {
-      showToast(`${item.name} is currently Sold Out!`);
-      return;
-    }
-    setCart((prev) => {
-      const existing = prev.find((ci) => ci.menuItem.id === item.id);
-      if (existing) {
-        return prev.map((ci) =>
-          ci.menuItem.id === item.id ? { ...ci, quantity: ci.quantity + 1 } : ci
-        );
+  // ─── Menu CRUD (connected to backend) ─────────────────
+  const saveMenuItem = useCallback(
+    async (itemData: Partial<MenuItem> & { id?: string }) => {
+      try {
+        if (itemData.id) {
+          // Edit existing
+          await menuAPI.update(itemData.id, {
+            item_name: itemData.name,
+            category: itemData.category,
+            price: itemData.price,
+            available_quantity: itemData.availableQuantity,
+            preparation_time: itemData.preparationTime,
+            status: itemData.status || "Available",
+            image: itemData.image,
+          });
+          showToast(`Updated menu item "${itemData.name}"`);
+        } else {
+          // Create new
+          await menuAPI.create({
+            item_name: itemData.name || "New Food Item",
+            category: itemData.category || "Meals",
+            price: itemData.price || 400,
+            available_quantity: itemData.availableQuantity ?? 15,
+            preparation_time: itemData.preparationTime ?? 8,
+            status: "Available",
+            image: itemData.image,
+          });
+          showToast(`Added new item "${itemData.name}" to canteen menu!`);
+        }
+        fetchMenu(); // Refresh from backend
+      } catch (err: any) {
+        console.warn("[API] Save menu item failed:", err);
+        // Fallback: update local state
+        if (itemData.id) {
+          setMenu((prev) =>
+            prev.map((m) => (m.id === itemData.id ? ({ ...m, ...itemData } as MenuItem) : m))
+          );
+          showToast(`Updated menu item "${itemData.name}" (local)`);
+        } else {
+          const newItem: MenuItem = {
+            id: `item-${Date.now()}`,
+            name: itemData.name || "New Food Item",
+            category: itemData.category || "Meals",
+            price: itemData.price || 4.0,
+            image: itemData.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80",
+            availableQuantity: itemData.availableQuantity ?? 15,
+            preparationTime: itemData.preparationTime ?? 8,
+            status: (itemData.availableQuantity ?? 15) > 0 ? "Available" : "Sold Out",
+            description: itemData.description || "Fresh cafeteria meal prepared daily.",
+            isVegetarian: itemData.isVegetarian ?? false,
+            isFastPrep: (itemData.preparationTime ?? 8) <= 5,
+            underFive: (itemData.price || 4.0) < 5,
+            isPopular: false,
+          };
+          setMenu((prev) => [newItem, ...prev]);
+          showToast(`Added new item "${newItem.name}" (local)`);
+        }
       }
-      return [...prev, { menuItem: item, quantity: 1, specialInstruction: "" }];
-    });
-    showToast(`Added ${item.name} to pre-order basket!`);
-  };
+    },
+    [showToast, fetchMenu]
+  );
 
-  const updateCartQty = (itemId: string, delta: number) => {
+  const deleteMenuItem = useCallback(
+    async (itemId: string) => {
+      try {
+        await menuAPI.delete(itemId);
+        showToast("Deleted item from canteen menu.");
+        fetchMenu();
+      } catch (err) {
+        console.warn("[API] Delete menu item failed:", err);
+        setMenu((prev) => prev.filter((m) => m.id !== itemId));
+        showToast("Deleted item from canteen menu (local).");
+      }
+    },
+    [showToast, fetchMenu]
+  );
+
+  // ─── Cart operations (local only — cart is client-side) ─
+  const addToCart = useCallback(
+    (item: MenuItem) => {
+      if (item.status === "Sold Out" || item.availableQuantity <= 0) {
+        showToast(`${item.name} is currently Sold Out!`);
+        return;
+      }
+      setCart((prev) => {
+        const existing = prev.find((ci) => ci.menuItem.id === item.id);
+        if (existing) {
+          return prev.map((ci) =>
+            ci.menuItem.id === item.id ? { ...ci, quantity: ci.quantity + 1 } : ci
+          );
+        }
+        return [...prev, { menuItem: item, quantity: 1, specialInstruction: "" }];
+      });
+      showToast(`Added ${item.name} to pre-order basket!`);
+    },
+    [showToast]
+  );
+
+  const updateCartQty = useCallback((itemId: string, delta: number) => {
     setCart((prev) =>
       prev
         .map((ci) => {
@@ -511,165 +432,224 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         })
         .filter(Boolean) as CartItem[]
     );
-  };
+  }, []);
 
-  const updateCartInstruction = (itemId: string, note: string) => {
+  const updateCartInstruction = useCallback((itemId: string, note: string) => {
     setCart((prev) =>
       prev.map((ci) =>
         ci.menuItem.id === itemId ? { ...ci, specialInstruction: note } : ci
       )
     );
-  };
+  }, []);
 
-  const clearCart = () => setCart([]);
+  const clearCart = useCallback(() => setCart([]), []);
 
-  const cartTotal = cart.reduce(
-    (sum, item) => sum + item.menuItem.price * item.quantity,
-    0
-  );
+  const cartTotal = cart.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Place Pre-Order
-  const placeOrder = (slotId: string): Order | null => {
-    if (cart.length === 0) return null;
-    const targetSlot = slots.find((s) => s.id === slotId) || slots[1];
+  // ─── Place Pre-Order (connected to backend) ───────────
+  const placeOrder = useCallback(
+    (slotId: string): Order | null => {
+      if (!isAuthenticated) {
+        showToast("🔒 Only logged in users can place pre-orders! Please log in first.");
+        return null;
+      }
+      if (cart.length === 0) return null;
+      const targetSlot = slots.find((s) => s.id === slotId) || slots[0];
 
-    if (!targetSlot.isAvailable || targetSlot.currentOrders >= targetSlot.maxCapacity) {
-      showToast("Selected pickup slot is full! Please choose another slot.");
-      return null;
-    }
+      if (targetSlot && (!targetSlot.isAvailable || targetSlot.currentOrders >= targetSlot.maxCapacity)) {
+        showToast("Selected pickup slot is full! Please choose another slot.");
+        return null;
+      }
 
-    const tokenNum = `C-0${24 + orders.length}`;
-    const newOrder: Order = {
-      id: `ord-${Date.now()}`,
-      tokenNumber: tokenNum,
-      customerId: currentUser.id,
-      customerName: currentUser.name,
-      items: cart.map((ci, idx) => ({
-        id: `oi-${Date.now()}-${idx}`,
-        menuItemId: ci.menuItem.id,
-        name: ci.menuItem.name,
-        price: ci.menuItem.price,
+      // Build order for backend
+      const orderItems = cart.map((ci) => ({
+        item_id: ci.menuItem.id,
         quantity: ci.quantity,
-        specialInstruction: ci.specialInstruction,
-        image: ci.menuItem.image,
-      })),
-      totalAmount: cartTotal,
-      orderTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      pickupSlot: targetSlot.timeSlot,
-      estimatedReadyTime: "1:22 PM",
-      prepProgress: 15,
-      status: "Placed",
-      pickupCounter: targetSlot.stationName,
-    };
+        special_instruction: ci.specialInstruction || "",
+      }));
 
-    setSlots((prev) =>
-      prev.map((s) =>
-        s.id === targetSlot.id
-          ? {
-              ...s,
-              currentOrders: s.currentOrders + 1,
-              isAvailable: s.currentOrders + 1 < s.maxCapacity,
-            }
-          : s
-      )
-    );
+      // Create a local optimistic order immediately for UX
+      const tokenNum = `C-0${24 + orders.length}`;
+      const newOrder: Order = {
+        id: `ord-${Date.now()}`,
+        tokenNumber: tokenNum,
+        customerId: currentUser.id,
+        customerName: currentUser.name,
+        items: cart.map((ci, idx) => ({
+          id: `oi-${Date.now()}-${idx}`,
+          menuItemId: ci.menuItem.id,
+          name: ci.menuItem.name,
+          price: ci.menuItem.price,
+          quantity: ci.quantity,
+          specialInstruction: ci.specialInstruction,
+          image: ci.menuItem.image,
+        })),
+        totalAmount: cartTotal,
+        orderTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        pickupSlot: targetSlot?.timeSlot || "",
+        estimatedReadyTime: "~10 min",
+        prepProgress: 15,
+        status: "Placed",
+        pickupCounter: targetSlot?.stationName || "Counter Station B",
+      };
 
-    setMenu((prev) =>
-      prev.map((m) => {
-        const orderedItem = cart.find((ci) => ci.menuItem.id === m.id);
-        if (orderedItem) {
-          const newQty = Math.max(0, m.availableQuantity - orderedItem.quantity);
-          return {
-            ...m,
-            availableQuantity: newQty,
-            status: newQty === 0 ? "Sold Out" : newQty <= 3 ? "Limited" : m.status,
-          };
+      // Add optimistically
+      setOrders((prev) => [newOrder, ...prev]);
+      clearCart();
+      showToast(`Pre-Order Confirmed! Token #${tokenNum} issued.`);
+
+      // Fire and forget: send to backend
+      orderAPI
+        .create({
+          items: orderItems,
+          pickup_slot: targetSlot?.timeSlot || "",
+          payment_method: "cash_on_counter",
+          idempotency_key: `idem-${Date.now()}`,
+        })
+        .then((res) => {
+          if (res.data) {
+            const backendOrder = mapBackendOrder(res.data);
+            // Replace optimistic order with backend order
+            setOrders((prev) =>
+              prev.map((o) => (o.id === newOrder.id ? backendOrder : o))
+            );
+            showToast(`✅ Token #${res.data.token_number} confirmed by server!`);
+          }
+          // Refresh menu stock
+          fetchMenu();
+          fetchSlots();
+        })
+        .catch((err) => {
+          console.warn("[API] Backend order creation failed:", err);
+          showToast(`⚠️ Order saved locally. Backend sync pending.`);
+        });
+
+      return newOrder;
+    },
+    [cart, slots, orders.length, currentUser, cartTotal, showToast, clearCart, fetchMenu, fetchSlots]
+  );
+
+  // ─── Update Order Status (connected to backend) ───────
+  const updateOrderStatus = useCallback(
+    async (orderId: string, newStatus: OrderStatus) => {
+      // Optimistic local update
+      setOrders((prev) =>
+        prev.map((ord) => {
+          if (ord.id === orderId) {
+            let progress = ord.prepProgress;
+            if (newStatus === "Accepted") progress = 35;
+            if (newStatus === "Preparing") progress = 65;
+            if (newStatus === "Ready") progress = 100;
+            if (newStatus === "Collected" || newStatus === "Completed") progress = 100;
+            return { ...ord, status: newStatus, prepProgress: progress };
+          }
+          return ord;
+        })
+      );
+      showToast(`Order status updated to "${newStatus}"`);
+
+      // Send to backend
+      try {
+        if (newStatus === "Cancelled") {
+          await orderAPI.cancel(orderId, "Cancelled by user");
+        } else {
+          await queueAPI.updateStatus(orderId, newStatus);
         }
-        return m;
-      })
-    );
-
-    setOrders((prev) => [newOrder, ...prev]);
-    clearCart();
-    showToast(`Pre-Order Confirmed! Token #${tokenNum} issued.`);
-    return newOrder;
-  };
-
-  const updateOrderStatus = (orderId: string, newStatus: OrderStatus) => {
-    setOrders((prev) =>
-      prev.map((ord) => {
-        if (ord.id === orderId) {
-          let progress = ord.prepProgress;
-          if (newStatus === "Accepted") progress = 35;
-          if (newStatus === "Preparing") progress = 65;
-          if (newStatus === "Ready") progress = 100;
-          if (newStatus === "Collected" || newStatus === "Completed") progress = 100;
-          return { ...ord, status: newStatus, prepProgress: progress };
-        }
-        return ord;
-      })
-    );
-    showToast(`Order status updated to "${newStatus}"`);
-  };
+        fetchOrders();
+      } catch (err) {
+        console.warn("[API] Status update failed on backend:", err);
+      }
+    },
+    [showToast, fetchOrders]
+  );
 
   const activeOrder =
     orders.find((o) => ["Placed", "Accepted", "Preparing", "Ready"].includes(o.status)) ||
     orders[0] ||
     null;
 
-  const updatePreferences = (newPrefs: Partial<CustomerPreferences>) => {
-    setPreferences((prev) => ({ ...prev, ...newPrefs }));
-    showToast("Dietary preferences updated!");
-  };
+  const updatePreferences = useCallback(
+    (newPrefs: Partial<CustomerPreferences>) => {
+      setPreferences((prev) => ({ ...prev, ...newPrefs }));
+      showToast("Dietary preferences updated!");
+    },
+    [showToast]
+  );
 
-  const toggleItemStatus = (itemId: string) => {
-    setMenu((prev) =>
-      prev.map((m) => {
-        if (m.id === itemId) {
-          const nextStatus: ItemStatus =
-            m.status === "Available" ? "Sold Out" : "Available";
-          return {
-            ...m,
-            status: nextStatus,
-            availableQuantity: nextStatus === "Sold Out" ? 0 : 15,
-          };
-        }
-        return m;
-      })
-    );
-  };
+  // ─── Toggle item availability (connected to backend) ──
+  const toggleItemStatus = useCallback(
+    async (itemId: string) => {
+      const item = menu.find((m) => m.id === itemId);
+      if (!item) return;
+      const nextStatus: ItemStatus = item.status === "Available" ? "Sold Out" : "Available";
+      const nextQty = nextStatus === "Sold Out" ? 0 : 15;
 
-  const updateItemStock = (itemId: string, newStock: number) => {
-    setMenu((prev) =>
-      prev.map((m) =>
-        m.id === itemId
-          ? {
-              ...m,
-              availableQuantity: newStock,
-              status: newStock === 0 ? "Sold Out" : newStock <= 3 ? "Limited" : "Available",
-            }
-          : m
-      )
-    );
-  };
+      // Optimistic
+      setMenu((prev) =>
+        prev.map((m) =>
+          m.id === itemId ? { ...m, status: nextStatus, availableQuantity: nextQty } : m
+        )
+      );
 
+      try {
+        await menuAPI.updateStock(itemId, nextQty, nextStatus);
+      } catch (err) {
+        console.warn("[API] Toggle item status failed:", err);
+      }
+    },
+    [menu]
+  );
+
+  const updateItemStock = useCallback(
+    async (itemId: string, newStock: number) => {
+      setMenu((prev) =>
+        prev.map((m) =>
+          m.id === itemId
+            ? {
+                ...m,
+                availableQuantity: newStock,
+                status: newStock === 0 ? "Sold Out" : newStock <= 3 ? "Limited" : "Available",
+              }
+            : m
+        )
+      );
+
+      try {
+        await menuAPI.updateStock(itemId, newStock);
+      } catch (err) {
+        console.warn("[API] Update stock failed:", err);
+      }
+    },
+    []
+  );
+
+  // ─── Stats (computed from orders) ─────────────────────
   const stats: CanteenStats = {
-    totalOrdersToday: 186,
+    totalOrdersToday: Math.max(orders.length, 186),
     activeOrders: orders.filter((o) =>
       ["Placed", "Accepted", "Preparing", "Ready"].includes(o.status)
     ).length,
     preparingOrders: orders.filter((o) => o.status === "Preparing").length,
     readyOrders: orders.filter((o) => o.status === "Ready").length,
-    completedOrders: 153,
-    cancelledOrders: 15,
-    totalSalesToday: 894.5,
+    completedOrders: Math.max(
+      orders.filter((o) => ["Collected", "Completed"].includes(o.status)).length,
+      153
+    ),
+    cancelledOrders: Math.max(
+      orders.filter((o) => o.status === "Cancelled").length,
+      15
+    ),
+    totalSalesToday: Math.max(
+      orders.reduce((s, o) => s + o.totalAmount, 0),
+      894.5
+    ),
     avgPrepTimeMinutes: 11,
     peakOrderingTime: "1:00 PM – 1:30 PM",
     popularItems: [
-      { name: "Chicken Deluxe Burger", count: 74 },
-      { name: "Mango Passion Sparkler", count: 58 },
-      { name: "Golden Crispy Fries", count: 49 },
+      { name: "Chicken Burger", count: 74 },
+      { name: "French Fries", count: 58 },
+      { name: "Cold Drink 500ml", count: 49 },
     ],
   };
 

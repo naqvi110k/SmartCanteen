@@ -202,70 +202,82 @@ export const Header: React.FC = () => {
               </Link>
             )}
 
-            {/* Role Switcher / Profile Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setRoleMenuOpen(!roleMenuOpen)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full border border-slate-200 text-slate-800 text-xs font-semibold transition-all active:scale-95"
+            {/* Sign In button or Role Switcher / Profile Dropdown */}
+            {!isAuthenticated ? (
+              <Link
+                href="/login"
+                className="flex items-center gap-1.5 px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-full text-xs font-extrabold shadow-md transition-all active:scale-95"
               >
                 <span className="material-symbols-outlined text-[18px]">
-                  manage_accounts
+                  login
                 </span>
-                <span className="hidden sm:inline">{currentUser.name}</span>
-                <span className="material-symbols-outlined text-[16px]">
-                  expand_more
-                </span>
-              </button>
+                <span>Sign In</span>
+              </Link>
+            ) : (
+              <div className="relative">
+                <button
+                  onClick={() => setRoleMenuOpen(!roleMenuOpen)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-full border border-slate-200 text-slate-800 text-xs font-semibold transition-all active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-[18px]">
+                    manage_accounts
+                  </span>
+                  <span className="hidden sm:inline">{currentUser.name}</span>
+                  <span className="material-symbols-outlined text-[16px]">
+                    expand_more
+                  </span>
+                </button>
 
-              {roleMenuOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 anim-fade-in-up">
-                  <div className="px-4 py-2 border-b border-slate-100">
-                    <p className="text-xs font-bold text-slate-900">{currentUser.name}</p>
-                    <p className="text-[11px] text-slate-400">{currentUser.email}</p>
-                  </div>
+                {roleMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 anim-fade-in-up">
+                    <div className="px-4 py-2 border-b border-slate-100">
+                      <p className="text-xs font-bold text-slate-900">{currentUser.name}</p>
+                      <p className="text-[11px] text-slate-400">{currentUser.email}</p>
+                    </div>
 
-                  <div className="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-1">
-                    Switch User Role
-                  </div>
-                  {(["customer", "kitchen", "manager", "admin"] as UserRole[]).map(
-                    (r) => (
-                      <button
-                        key={r}
-                        onClick={() => handleRoleSwitch(r)}
-                        className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center justify-between hover:bg-slate-50 transition-colors ${
-                          role === r
-                            ? "text-orange-600 font-bold bg-orange-50/50"
-                            : "text-slate-700"
-                        }`}
+                    <div className="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-1">
+                      Switch User Role
+                    </div>
+                    {(["customer", "kitchen", "manager", "admin"] as UserRole[]).map(
+                      (r) => (
+                        <button
+                          key={r}
+                          onClick={() => handleRoleSwitch(r)}
+                          className={`w-full text-left px-4 py-2.5 text-xs font-medium flex items-center justify-between hover:bg-slate-50 transition-colors ${
+                            role === r
+                              ? "text-orange-600 font-bold bg-orange-50/50"
+                              : "text-slate-700"
+                          }`}
+                        >
+                          <span>{roleLabels[r].title}</span>
+                          {role === r && (
+                            <span className="material-symbols-outlined text-[16px] text-orange-600">
+                              check
+                            </span>
+                          )}
+                        </button>
+                      )
+                    )}
+
+                    <div className="pt-2 mt-2 border-t border-slate-100 px-2">
+                      <Link
+                        href="/login"
+                        onClick={() => {
+                          logout();
+                          setRoleMenuOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl flex items-center justify-between"
                       >
-                        <span>{roleLabels[r].title}</span>
-                        {role === r && (
-                          <span className="material-symbols-outlined text-[16px] text-orange-600">
-                            check
-                          </span>
-                        )}
-                      </button>
-                    )
-                  )}
-
-                  <div className="pt-2 mt-2 border-t border-slate-100 px-2">
-                    <Link
-                      href="/login"
-                      onClick={() => {
-                        logout();
-                        setRoleMenuOpen(false);
-                      }}
-                      className="w-full text-left px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl flex items-center justify-between"
-                    >
-                      <span>Sign In / Switch Login</span>
-                      <span className="material-symbols-outlined text-[16px]">
-                        login
-                      </span>
-                    </Link>
+                        <span>Sign In / Switch Login</span>
+                        <span className="material-symbols-outlined text-[16px]">
+                          login
+                        </span>
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

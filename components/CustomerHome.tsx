@@ -13,11 +13,12 @@ export const CustomerHome: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
+  // Categories include backend's "Fast Food" + others
   const categories = [
     "All",
     "Popular 🔥",
     "Fast Prep (<5m) ⚡",
-    "Burgers 🍔",
+    "Fast Food 🍔",
     "Meals 🍱",
     "Beverages 🥤",
     "Snacks 🍟",
@@ -48,8 +49,8 @@ export const CustomerHome: React.FC = () => {
       !selectedCategory.includes(item.name)
     ) {
       if (
-        selectedCategory === "Burgers 🍔" &&
-        item.category !== "Burgers"
+        selectedCategory === "Fast Food 🍔" &&
+        item.category !== "Fast Food"
       )
         return false;
       if (selectedCategory === "Meals 🍱" && item.category !== "Meals")

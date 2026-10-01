@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useApp } from "../app/context/AppContext";
 import { OrderStatus } from "../app/types";
+import { collectionAPI } from "../app/lib/api";
 
 export const KitchenDashboard: React.FC = () => {
   const {
@@ -26,26 +27,21 @@ export const KitchenDashboard: React.FC = () => {
     return true;
   });
 
-  const handleVerifyQRScan = (e: React.FormEvent) => {
+  const handleVerifyQRScan = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!scanTokenInput.trim()) return;
+    const tokenOrId = scanTokenInput.trim();
+    if (!tokenOrId) return;
 
-    const targetOrder = orders.find(
-      (o) =>
-        o.tokenNumber.toLowerCase() === scanTokenInput.trim().toLowerCase() ||
-        o.id.toLowerCase() === scanTokenInput.trim().toLowerCase()
-    );
-
-    if (targetOrder) {
-      if (targetOrder.status === "Collected" || targetOrder.status === "Completed") {
-        showToast(`⚠️ Token ${targetOrder.tokenNumber} has ALREADY been collected! Double collection prevented.`);
-      } else {
-        updateOrderStatus(targetOrder.id, "Collected");
-        showToast(`✅ Verified Token ${targetOrder.tokenNumber}! Marked as COLLECTED.`);
-      }
+    try {
+      const res = await collectionAPI.confirm({
+        token_number: tokenOrId.startsWith("C-") ? tokenOrId : undefined,
+        order_id: !tokenOrId.startsWith("C-") ? tokenOrId : undefined,
+      });
+      showToast(`✅ Verified Token ${tokenOrId}! Marked as COMPLETED.`);
+      updateOrderStatus(res.data._id || res.data.order_id, "Completed");
       setScanTokenInput("");
-    } else {
-      showToast(`❌ Invalid Token "${scanTokenInput}". No matching active order found.`);
+    } catch (err: any) {
+      showToast(`⚠️ ${err.message || "Invalid token or order already collected!"}`);
     }
   };
 

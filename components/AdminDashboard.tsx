@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useApp } from "../app/context/AppContext";
+import { adminAPI } from "../app/lib/api";
 
 export const AdminDashboard: React.FC = () => {
   const { showToast } = useApp();
@@ -10,67 +11,24 @@ export const AdminDashboard: React.FC = () => {
     "users" | "canteens" | "permissions" | "logs" | "categories"
   >("users");
 
-  const mockUsers = [
-    {
-      id: "u-1",
-      name: "Alex Rivera",
-      email: "alex.rivera@campus.edu.pk",
-      role: "Customer",
-      status: "Active",
-    },
-    {
-      id: "u-2",
-      name: "Chef Marcus Vance",
-      email: "marcus.vance@canteen.edu.pk",
-      role: "Kitchen Staff",
-      status: "Active",
-    },
-    {
-      id: "u-3",
-      name: "Elena Rostova",
-      email: "elena.r@canteen.edu.pk",
-      role: "Canteen Manager",
-      status: "Active",
-    },
-    {
-      id: "u-4",
-      name: "Syed Mohsin",
-      email: "mohsin.cs24@muet.edu.pk",
-      role: "Customer",
-      status: "Active",
-    },
-  ];
+  const [usersList, setUsersList] = useState<any[]>([]);
+  const [logsList, setLogsList] = useState<any[]>([]);
 
-  const mockLogs = [
-    {
-      id: "log-1",
-      timestamp: "12:54:10 PM",
-      user: "Alex Rivera",
-      action: "Placed Pre-Order #C-023",
-      severity: "INFO",
-    },
-    {
-      id: "log-2",
-      timestamp: "12:50:02 PM",
-      user: "Chef Marcus Vance",
-      action: "Advanced Order #C-022 to READY",
-      severity: "INFO",
-    },
-    {
-      id: "log-3",
-      timestamp: "12:45:30 PM",
-      user: "Elena Rostova",
-      action: "Updated Chicken Deluxe Burger stock to 12",
-      severity: "AUDIT",
-    },
-    {
-      id: "log-4",
-      timestamp: "12:30:15 PM",
-      user: "System AI Engine",
-      action: "Generated Rush Hour Peak Demand Alert",
-      severity: "SYSTEM",
-    },
-  ];
+  useEffect(() => {
+    adminAPI
+      .getUsers()
+      .then((res) => {
+        if (res.data) setUsersList(res.data);
+      })
+      .catch((err) => console.warn("[API] Admin getUsers failed:", err));
+
+    adminAPI
+      .getLogs()
+      .then((res) => {
+        if (res.data) setLogsList(res.data);
+      })
+      .catch((err) => console.warn("[API] Admin getLogs failed:", err));
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto w-full px-4 pt-4 pb-32 flex flex-col gap-6">
@@ -151,18 +109,50 @@ export const AdminDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {mockUsers.map((u) => (
-                  <tr key={u.id} className="hover:bg-slate-50">
+                {(usersList.length > 0
+                  ? usersList
+                  : [
+                      {
+                        _id: "u-1",
+                        name: "Student Customer",
+                        email: "customer@canteen.com",
+                        role: "customer",
+                        account_status: "active",
+                      },
+                      {
+                        _id: "u-2",
+                        name: "Kitchen Chef / Staff",
+                        email: "staff@canteen.com",
+                        role: "staff",
+                        account_status: "active",
+                      },
+                      {
+                        _id: "u-3",
+                        name: "Canteen Manager",
+                        email: "manager@canteen.com",
+                        role: "manager",
+                        account_status: "active",
+                      },
+                      {
+                        _id: "u-4",
+                        name: "System Administrator",
+                        email: "admin@canteen.com",
+                        role: "admin",
+                        account_status: "active",
+                      },
+                    ]
+                ).map((u) => (
+                  <tr key={u._id || u.id} className="hover:bg-slate-50">
                     <td className="p-3 font-bold text-slate-900">{u.name}</td>
                     <td className="p-3 text-slate-600">{u.email}</td>
                     <td className="p-3">
-                      <span className="font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
+                      <span className="font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200 uppercase text-[10px]">
                         {u.role}
                       </span>
                     </td>
                     <td className="p-3">
-                      <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
-                        {u.status}
+                      <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full text-[10px]">
+                        {u.account_status || u.status || "active"}
                       </span>
                     </td>
                     <td className="p-3">
@@ -192,30 +182,42 @@ export const AdminDashboard: React.FC = () => {
           </div>
 
           <div className="divide-y divide-slate-100 font-mono text-xs">
-            {mockLogs.map((log) => (
+            {(logsList.length > 0
+              ? logsList
+              : [
+                  {
+                    _id: "log-1",
+                    created_at: new Date().toISOString(),
+                    user_name: "Student Customer",
+                    action: "ORDER_PLACED",
+                    details: { order_id: "ORD-20261001-1023", token: "C-023" },
+                  },
+                  {
+                    _id: "log-2",
+                    created_at: new Date().toISOString(),
+                    user_name: "Kitchen Chef / Staff",
+                    action: "ORDER_STATUS_TRANSITION",
+                    details: { from: "Accepted", to: "Preparing" },
+                  },
+                ]
+            ).map((log) => (
               <div
-                key={log.id}
+                key={log._id || log.id}
                 className="py-3 flex items-center justify-between gap-4"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="text-slate-400 font-semibold shrink-0">
-                    [{log.timestamp}]
+                    [{new Date(log.created_at || Date.now()).toLocaleTimeString()}]
                   </span>
                   <span className="font-bold text-slate-900 shrink-0">
-                    {log.user}:
+                    {log.user_name || log.user || "System"}:
                   </span>
-                  <span className="text-slate-700 truncate">{log.action}</span>
+                  <span className="text-slate-700 truncate">
+                    {log.action} {log.details ? JSON.stringify(log.details) : ""}
+                  </span>
                 </div>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                    log.severity === "AUDIT"
-                      ? "bg-purple-100 text-purple-800"
-                      : log.severity === "SYSTEM"
-                      ? "bg-orange-100 text-orange-800"
-                      : "bg-slate-100 text-slate-700"
-                  }`}
-                >
-                  {log.severity}
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-800 uppercase">
+                  {log.role || "AUDIT"}
                 </span>
               </div>
             ))}
