@@ -11,6 +11,9 @@ export default function LoginPage() {
   const router = useRouter();
 
   const [selectedRole, setSelectedRole] = useState<UserRole>("customer");
+  const [isSignup, setIsSignup] = useState(false);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("customer@canteen.com");
   const [password, setPassword] = useState("password123");
   const [isLoading, setIsLoading] = useState(false);
@@ -73,6 +76,14 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      if (isSignup) {
+        const res = await authAPI.register(name, email, password, phone);
+        setToken(res.token);
+        showToast(`Account created for ${res.user.name}.`);
+        window.location.assign("/");
+        return;
+      }
+
       // Call real backend API
       const res = await authAPI.login(email, password);
       setToken(res.token);
@@ -90,6 +101,10 @@ export default function LoginPage() {
       router.push(conf ? conf.redirectTo : "/");
     } catch (err: any) {
       console.error("[Login] Backend auth failed:", err);
+      if (isSignup) {
+        showToast(err.message || "Could not create your account.");
+        return;
+      }
       // Fallback to local context login
       login(selectedRole);
       showToast(`Logged in locally as ${selectedRole.toUpperCase()}`);
@@ -114,7 +129,7 @@ export default function LoginPage() {
             Smart Canteen Portal
           </h1>
           <p className="text-xs text-slate-500 max-w-sm">
-            Sign in to access Pre-Order Management, Digital Tokens, Kitchen Queue, or Manager Operations.
+            {isSignup ? "Create a customer account to order meals and receive digital tokens." : "Sign in to access Pre-Order Management, Digital Tokens, Kitchen Queue, or Manager Operations."}
           </p>
           <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -123,7 +138,7 @@ export default function LoginPage() {
         </div>
 
         {/* Role Selector Cards */}
-        <div className="flex flex-col gap-2">
+        {!isSignup && <div className="flex flex-col gap-2">
           <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
             Select Your Role
           </label>
@@ -159,10 +174,24 @@ export default function LoginPage() {
               </div>
             ))}
           </div>
-        </div>
+        </div>}
 
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {isSignup && (
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-slate-700">Full Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                minLength={2}
+                className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:bg-white"
+              />
+            </div>
+          )}
+
           <div className="flex flex-col gap-1">
             <label className="text-xs font-bold text-slate-700">
               Email Address
@@ -175,6 +204,18 @@ export default function LoginPage() {
               className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:bg-white"
             />
           </div>
+
+          {isSignup && (
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-slate-700">Phone (optional)</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:bg-white"
+              />
+            </div>
+          )}
 
           <div className="flex flex-col gap-1">
             <label className="text-xs font-bold text-slate-700">Password</label>
@@ -198,10 +239,23 @@ export default function LoginPage() {
                 <span>Authenticating...</span>
               </>
             ) : (
-              `Sign In as ${selectedRole.toUpperCase()}`
+              isSignup ? "Create Customer Account" : `Sign In as ${selectedRole.toUpperCase()}`
             )}
           </button>
         </form>
+
+        <button
+          type="button"
+          onClick={() => {
+            setIsSignup(!isSignup);
+            setSelectedRole("customer");
+            setEmail("customer@canteen.com");
+            setPassword("password123");
+          }}
+          className="text-xs font-bold text-orange-600 hover:text-orange-700"
+        >
+          {isSignup ? "Already have an account? Sign in" : "New customer? Create an account"}
+        </button>
       </div>
     </div>
   );
