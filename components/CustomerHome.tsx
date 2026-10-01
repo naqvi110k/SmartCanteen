@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "../app/context/AppContext";
 import { MenuItem } from "../app/types";
+import { aiAPI } from "../app/lib/api";
 
 const FALLBACK_MENU_IMAGE = "/menu-fallback.svg";
 
 export const CustomerHome: React.FC = () => {
-  const { menu, addToCart, cartCount, cartTotal, preferences } = useApp();
+  const { menu, addToCart, cartCount, cartTotal, preferences, isAuthenticated } = useApp();
   const router = useRouter();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -17,6 +18,25 @@ export const CustomerHome: React.FC = () => {
   const [maxPrice, setMaxPrice] = useState("");
   const [availability, setAvailability] = useState("All");
   const [maxPrepTime, setMaxPrepTime] = useState("");
+  const [recommendationNames, setRecommendationNames] = useState<string[]>([]);
+  const [recommendationCategory, setRecommendationCategory] = useState("Popular right now");
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setRecommendationNames([]);
+      return;
+    }
+
+    aiAPI.getRecommendations()
+      .then(({ data }) => {
+        const items = Array.isArray(data?.items) ? data.items : [];
+        setRecommendationNames(items.map((item: { item_name?: string }) => item.item_name).filter(Boolean));
+        setRecommendationCategory(data?.preferredCategory || "Popular right now");
+      })
+      .catch(() => {
+        setRecommendationNames([]);
+      });
+  }, [isAuthenticated]);
 
   // Categories include backend's "Fast Food" + others
   const categories = [
@@ -85,6 +105,14 @@ export const CustomerHome: React.FC = () => {
 
     return true;
   });
+
+  const recommendedMenu = (recommendationNames.length > 0
+    ? recommendationNames.map((name) => menu.find((item) => {
+        const menuName = item.name.toLowerCase();
+        const recommendationName = name.toLowerCase();
+        return menuName === recommendationName || menuName.includes(recommendationName) || recommendationName.includes(menuName);
+      })).filter(Boolean) as MenuItem[]
+    : menu.filter((item) => item.status !== "Sold Out" && item.availableQuantity > 0 && item.isPopular).slice(0, 4));
 
   return (
     <div className="flex flex-col w-full pb-32">
@@ -226,6 +254,44 @@ export const CustomerHome: React.FC = () => {
             </span>
           </button>
         </div>
+
+        {isAuthenticated && recommendedMenu.length > 0 && (
+          <section className="bg-slate-900 rounded-2xl p-4 text-white shadow-lg border border-slate-800">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="material-symbols-outlined text-orange-400">auto_awesome</span>
+                <div className="min-w-0">
+                  <h2 className="font-extrabold text-sm truncate">Recommended for you</h2>
+                  <p className="text-[11px] text-slate-400 truncate">AI picks from {recommendationCategory}</p>
+                </div>
+              </div>
+              <span className="text-[10px] uppercase tracking-wider font-bold text-orange-300 shrink-0">Smart picks</span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {recommendedMenu.slice(0, 4).map((item) => (
+                <div key={`recommendation-${item.id}`} className="bg-white/10 rounded-xl p-2.5 flex flex-col gap-2">
+                  <img
+                    src={item.image || FALLBACK_MENU_IMAGE}
+                    alt={item.name}
+                    className="w-full aspect-4/3 object-cover rounded-lg"
+                    onError={(event) => { event.currentTarget.src = FALLBACK_MENU_IMAGE; }}
+                  />
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold truncate">{item.name}</p>
+                    <p className="text-[11px] text-slate-300">Rs. {item.price.toFixed(0)}</p>
+                  </div>
+                  <button
+                    onClick={() => addToCart(item)}
+                    className="w-full py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-[11px] font-bold flex items-center justify-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">add</span>
+                    Add to cart
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Categories Bar */}
         <div className="overflow-x-auto no-scrollbar scroll-smooth -mx-4 px-4">
