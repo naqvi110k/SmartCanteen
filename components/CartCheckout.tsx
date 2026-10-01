@@ -2,6 +2,8 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "../app/context/AppContext";
 
+const FALLBACK_MENU_IMAGE = "/menu-fallback.svg";
+
 export const CartCheckout: React.FC = () => {
   const router = useRouter();
   const {
@@ -134,13 +136,13 @@ export const CartCheckout: React.FC = () => {
             >
               <div className="flex items-center gap-4">
                 <img
-                  src={menuItem.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80"}
+                  src={menuItem.image || FALLBACK_MENU_IMAGE}
                   alt={menuItem.name}
                   loading="lazy"
                   onError={(e) => {
                     const target = e.currentTarget;
-                    if (target.src !== "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80") {
-                      target.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80";
+                    if (target.src !== FALLBACK_MENU_IMAGE) {
+                      target.src = FALLBACK_MENU_IMAGE;
                     }
                   }}
                   className="w-20 h-20 rounded-xl object-cover bg-slate-100 shrink-0"
