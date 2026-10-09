@@ -1,19 +1,24 @@
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "../app/context/AppContext";
 
 export const OrderHistory: React.FC = () => {
   const router = useRouter();
-  const { orders, addToCart, menu } = useApp();
+  const { orders, reorderPastOrder, menu, showToast } = useApp();
+  const [reorderingId, setReorderingId] = useState<string | null>(null);
 
-  const handleReorder = (order: typeof orders[0]) => {
-    order.items.forEach((item) => {
-      const menuItem = menu.find((m) => m.id === item.menuItemId);
-      if (menuItem) {
-        addToCart(menuItem);
+  const handleReorder = async (order: typeof orders[0]) => {
+    try {
+      setReorderingId(order.id);
+      const result = await reorderPastOrder(order);
+      if (result.success) {
+        router.push("/cart");
       }
-    });
-    router.push("/cart");
+    } catch (err: any) {
+      showToast("Could not reorder this past order. Please try again.");
+    } finally {
+      setReorderingId(null);
+    }
   };
 
   return (
@@ -60,19 +65,35 @@ export const OrderHistory: React.FC = () => {
                   </div>
                 </div>
 
-                <span
-                  className={`text-xs font-bold px-3 py-1 rounded-full ${
-                    order.status === "Completed" || order.status === "Collected"
-                      ? "bg-emerald-100 text-emerald-800"
-                      : order.status === "Preparing" || order.status === "Ready"
-                      ? "bg-orange-100 text-orange-800"
-                      : order.status === "Cancelled"
-                      ? "bg-red-100 text-red-700"
-                      : "bg-slate-100 text-slate-700"
-                  }`}
-                >
-                  {order.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                      order.paymentStatus === "Paid"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : order.paymentStatus === "Failed"
+                        ? "bg-red-50 text-red-700 border-red-200"
+                        : order.paymentStatus === "Refunded"
+                        ? "bg-purple-50 text-purple-700 border-purple-200"
+                        : "bg-amber-50 text-amber-700 border-amber-200"
+                    }`}
+                  >
+                    💳 {order.paymentStatus || "Pending"}
+                  </span>
+
+                  <span
+                    className={`text-xs font-bold px-3 py-1 rounded-full ${
+                      order.status === "Completed" || order.status === "Collected"
+                        ? "bg-emerald-100 text-emerald-800"
+                        : order.status === "Preparing" || order.status === "Ready"
+                        ? "bg-orange-100 text-orange-800"
+                        : order.status === "Cancelled"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-slate-100 text-slate-700"
+                    }`}
+                  >
+                    {order.status}
+                  </span>
+                </div>
               </div>
 
               {/* Items Summary */}
@@ -105,12 +126,13 @@ export const OrderHistory: React.FC = () => {
 
                 <button
                   onClick={() => handleReorder(order)}
-                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 active:scale-95"
+                  disabled={reorderingId === order.id}
+                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[16px]">
-                    replay
+                  <span className={`material-symbols-outlined text-[16px] ${reorderingId === order.id ? "animate-spin" : ""}`}>
+                    {reorderingId === order.id ? "progress_activity" : "replay"}
                   </span>
-                  <span>Reorder Identical Pass</span>
+                  <span>{reorderingId === order.id ? "Validating Menu..." : "Reorder"}</span>
                 </button>
               </div>
             </div>

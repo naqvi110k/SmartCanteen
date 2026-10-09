@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "../app/context/AppContext";
 
@@ -19,13 +19,14 @@ export const CartCheckout: React.FC = () => {
   } = useApp();
 
   const { isAuthenticated } = useApp();
+  const [paymentMethod, setPaymentMethod] = useState<"smart_card" | "card" | "cash_on_counter">("smart_card");
 
   const handleConfirmOrder = () => {
     if (!isAuthenticated) {
       router.push("/login");
       return;
     }
-    const res = placeOrder(selectedSlotId);
+    const res = placeOrder(selectedSlotId, paymentMethod);
     if (res) {
       router.push("/live-order");
     }
@@ -291,6 +292,90 @@ export const CartCheckout: React.FC = () => {
                     ? "Slot Full"
                     : `${slot.currentOrders}/${slot.maxCapacity} Booked`}
                 </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Payment Method Selector (Phase 2: Payment Status Tracking) */}
+      <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 mb-6 flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[20px] text-orange-600">
+              payments
+            </span>
+            <h3 className="font-bold text-slate-900 text-sm">
+              Select Payment Method
+            </h3>
+          </div>
+          <span className="text-[11px] font-bold text-slate-500">
+            Reconciles payment_status
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {[
+            {
+              id: "smart_card",
+              title: "Campus Smart Card",
+              desc: "Instant NFC Balance",
+              status: "Paid",
+              icon: "contactless",
+              badge: "Instant Paid",
+              badgeColor: "bg-emerald-100 text-emerald-800"
+            },
+            {
+              id: "card",
+              title: "Debit / Credit Card",
+              desc: "Online Checkout",
+              status: "Paid",
+              icon: "credit_card",
+              badge: "Instant Paid",
+              badgeColor: "bg-emerald-100 text-emerald-800"
+            },
+            {
+              id: "cash_on_counter",
+              title: "Cash at Pickup",
+              desc: "Pay at counter window",
+              status: "Pending",
+              icon: "point_of_sale",
+              badge: "Pending",
+              badgeColor: "bg-amber-100 text-amber-800"
+            }
+          ].map((pm) => {
+            const isSelected = paymentMethod === pm.id;
+            return (
+              <div
+                key={pm.id}
+                onClick={() => setPaymentMethod(pm.id as any)}
+                className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col gap-2 ${
+                  isSelected
+                    ? "bg-gradient-to-r from-orange-50 to-amber-50/40 border-orange-500 ring-2 ring-orange-500/20 shadow-sm"
+                    : "bg-white border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className={`material-symbols-outlined text-[20px] ${isSelected ? "text-orange-600" : "text-slate-500"}`}>
+                      {pm.icon}
+                    </span>
+                    <span className="text-xs font-extrabold text-slate-900">
+                      {pm.title}
+                    </span>
+                  </div>
+                  {isSelected && (
+                    <span className="w-4 h-4 rounded-full bg-orange-600 text-white flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-[12px]">check</span>
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-slate-500">
+                  <span>{pm.desc}</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pm.badgeColor}`}>
+                    {pm.badge}
+                  </span>
+                </div>
               </div>
             );
           })}
