@@ -40,3 +40,6 @@ frontend/
 .vercel
 *.tsbuildinfo
 next-env.d.ts
+
+# nested subdirectories
+SmartCanteen/

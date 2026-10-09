@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { useApp } from "../app/context/AppContext";
-import { MenuItem } from "../app/types";
 import { aiAPI, analyticsAPI, queueAPI, managerAPI } from "../app/lib/api";
 
 interface AIOperationsData {

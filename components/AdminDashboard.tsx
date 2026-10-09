@@ -299,7 +299,7 @@ export const AdminDashboard: React.FC = () => {
                         email: "customer@canteen.com",
                         role: "customer",
                         account_status: "active",
-                        phone: "+923001234567"
+                        phone: "+923001234567",
                       },
                       {
                         _id: "u-2",
@@ -307,7 +307,7 @@ export const AdminDashboard: React.FC = () => {
                         email: "staff@canteen.com",
                         role: "staff",
                         account_status: "active",
-                        phone: "+923001234568"
+                        phone: "+923001234568",
                       },
                       {
                         _id: "u-3",
@@ -315,7 +315,7 @@ export const AdminDashboard: React.FC = () => {
                         email: "manager@canteen.com",
                         role: "manager",
                         account_status: "active",
-                        phone: "+923001234569"
+                        phone: "+923001234569",
                       },
                       {
                         _id: "u-4",
@@ -323,7 +323,7 @@ export const AdminDashboard: React.FC = () => {
                         email: "admin@canteen.com",
                         role: "admin",
                         account_status: "active",
-                        phone: "+923001234570"
+                        phone: "+923001234570",
                       },
                     ]
                 ).map((u) => (
