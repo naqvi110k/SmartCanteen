@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "backend:dev": "nodemon backend/src/server.js",
+    "backend:dev": "node --watch backend/src/server.js",
     "backend": "node backend/src/server.js",
     "lint": "eslint"
   },
