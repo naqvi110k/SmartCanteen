@@ -14,6 +14,8 @@ export type OrderStatus =
 
 export type ItemStatus = 'Available' | 'Limited' | 'Sold Out' | 'Temporarily Unavailable';
 
+export type PaymentStatus = 'Pending' | 'Paid' | 'Failed' | 'Refunded';
+
 export interface MenuItem {
   id: string;
   name: string;
@@ -69,6 +71,8 @@ export interface Order {
   estimatedReadyTime: string;
   prepProgress: number; // 0 to 100
   status: OrderStatus;
+  paymentStatus?: PaymentStatus;
+  paymentMethod?: string;
   pickupCounter: string;
   specialNotes?: string;
   isDelayed?: boolean;

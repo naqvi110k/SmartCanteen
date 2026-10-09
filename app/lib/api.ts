@@ -213,6 +213,50 @@ export const orderAPI = {
     apiFetch<{
       data: { slot: string; available: number; totalCapacity: number }[];
     }>("/orders/pickup-slots"),
+
+  reorder: (id: string) =>
+    apiFetch<{
+      message: string;
+      data: {
+        original_order_id: string;
+        items: Array<{
+          item_id: string;
+          item_name: string;
+          category?: string;
+          quantity: number;
+          price: number;
+          available_quantity: number;
+          special_instruction?: string;
+          image?: string;
+          price_changed?: boolean;
+          original_price?: number;
+        }>;
+        out_of_stock_items: Array<{
+          item_id: string;
+          item_name: string;
+          requested_quantity: number;
+          available_quantity: number;
+          reason?: string;
+        }>;
+        subtotal: number;
+        has_unavailable_items: boolean;
+        can_proceed: boolean;
+      };
+    }>(`/orders/${id}/reorder`, {
+      method: "POST",
+    }),
+
+  updatePaymentStatus: (id: string, payment_status: string, payment_method?: string) =>
+    apiFetch<{ data: BackendOrder }>(`/orders/${id}/payment`, {
+      method: "PATCH",
+      body: JSON.stringify({ payment_status, ...(payment_method ? { payment_method } : {}) }),
+    }),
+
+  updatePickupTime: (id: string, data: { pickup_time?: string; pickup_slot?: string }) =>
+    apiFetch<{ data: BackendOrder; message: string }>(`/orders/${id}/pickup-time`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
 };
 
 // ─── Queue APIs ────────────────────────────────────────
@@ -270,6 +314,37 @@ export const aiAPI = {
   getSalesInsights: () => apiFetch<{ data: any }>("/ai/sales-insights"),
 };
 
+// ─── Manager APIs (Phase 4: Manager Permissions) ──────
+export const managerAPI = {
+  getStaff: () => apiFetch<{ data: any[]; count: number }>("/manager/staff"),
+
+  createStaff: (data: {
+    name: string;
+    email: string;
+    password: string;
+    phone?: string;
+    account_status?: string;
+  }) =>
+    apiFetch<{ data: any; message: string }>("/manager/staff", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateStaff: (
+    id: string,
+    data: { name?: string; phone?: string; account_status?: string; password?: string }
+  ) =>
+    apiFetch<{ data: any; message: string }>(`/manager/staff/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  deleteStaff: (id: string) =>
+    apiFetch<{ data: any; message: string }>(`/manager/staff/${id}`, {
+      method: "DELETE",
+    }),
+};
+
 // ─── Admin APIs ────────────────────────────────────────
 export const adminAPI = {
   getUsers: () => apiFetch<{ data: any[] }>("/admin/users"),
@@ -285,7 +360,42 @@ export const adminAPI = {
       body: JSON.stringify(data),
     }),
   getLogs: () => apiFetch<{ data: any[] }>("/admin/logs"),
+
+  // Categories CRUD (Phase 5)
+  getCategories: () => apiFetch<{ data: any[]; count: number }>("/admin/categories"),
+  createCategory: (data: { name: string; description?: string; icon?: string; image?: string; is_active?: boolean }) =>
+    apiFetch<{ data: any; message: string }>("/admin/categories", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateCategory: (id: string, data: { name?: string; description?: string; icon?: string; image?: string; is_active?: boolean }) =>
+    apiFetch<{ data: any; message: string }>(`/admin/categories/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  deleteCategory: (id: string) =>
+    apiFetch<{ data: any; message: string }>(`/admin/categories/${id}`, {
+      method: "DELETE",
+    }),
+
+  // Canteen Hubs CRUD (Phase 5)
+  getCanteens: () => apiFetch<{ data: any[]; count: number }>("/admin/canteens"),
+  createCanteen: (data: { name: string; location: string; opening_time?: string; closing_time?: string; is_active?: boolean; contact_number?: string }) =>
+    apiFetch<{ data: any; message: string }>("/admin/canteens", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateCanteen: (id: string, data: { name?: string; location?: string; opening_time?: string; closing_time?: string; is_active?: boolean; contact_number?: string }) =>
+    apiFetch<{ data: any; message: string }>(`/admin/canteens/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  deleteCanteen: (id: string) =>
+    apiFetch<{ data: any; message: string }>(`/admin/canteens/${id}`, {
+      method: "DELETE",
+    }),
 };
+
 
 // ─── Field Mappers (backend snake_case → frontend camelCase) ──
 
@@ -354,6 +464,10 @@ export function mapBackendOrder(b: BackendOrder): Order {
       : "",
     prepProgress: statusToProgress[b.order_status] || 15,
     status: b.order_status as Order["status"],
+    paymentStatus: (b.payment_status
+      ? (b.payment_status.charAt(0).toUpperCase() + b.payment_status.slice(1).toLowerCase())
+      : "Pending") as any,
+    paymentMethod: b.payment_method || "cash_on_counter",
     pickupCounter: "Counter Station B — Hot Express",
     isDelayed: b.is_delayed,
     delayReason: b.delay_reason,

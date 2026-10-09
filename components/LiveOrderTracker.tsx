@@ -141,16 +141,42 @@ export const LiveOrderTracker: React.FC = () => {
         <div className="absolute -top-12 -right-12 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl pointer-events-none"></div>
         <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
 
-        <div className="flex items-center justify-between w-full mb-2">
+        <div className="flex items-center justify-between w-full mb-2 flex-wrap gap-2">
           <span className="text-[11px] font-semibold bg-slate-100 text-slate-800 px-3 py-1 rounded-full flex items-center gap-1">
             <span className="material-symbols-outlined text-[14px] text-orange-600">
               verified
             </span>
             Verified Digital Pass
           </span>
-          <span className="text-[11px] font-bold bg-orange-100 text-orange-800 px-3 py-1 rounded-full">
-            Slot: {activeOrder.pickupSlot}
-          </span>
+
+          <div className="flex items-center gap-1.5">
+            <span
+              className={`text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1 border ${
+                activeOrder.paymentStatus === "Paid"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : activeOrder.paymentStatus === "Failed"
+                  ? "bg-red-50 text-red-700 border-red-200"
+                  : activeOrder.paymentStatus === "Refunded"
+                  ? "bg-purple-50 text-purple-700 border-purple-200"
+                  : "bg-amber-50 text-amber-700 border-amber-200"
+              }`}
+            >
+              <span className="material-symbols-outlined text-[13px]">
+                {activeOrder.paymentStatus === "Paid"
+                  ? "check_circle"
+                  : activeOrder.paymentStatus === "Failed"
+                  ? "error"
+                  : activeOrder.paymentStatus === "Refunded"
+                  ? "replay"
+                  : "schedule"}
+              </span>
+              Payment: {activeOrder.paymentStatus || "Pending"}
+            </span>
+
+            <span className="text-[11px] font-bold bg-orange-100 text-orange-800 px-3 py-1 rounded-full">
+              Slot: {activeOrder.pickupSlot}
+            </span>
+          </div>
         </div>
 
         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">

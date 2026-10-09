@@ -317,17 +317,33 @@ export const KitchenDashboard: React.FC = () => {
                       </div>
                     </div>
 
-                    <span
-                      className={`text-xs font-bold px-3 py-1 rounded-full ${
-                        order.status === "Ready"
-                          ? "bg-emerald-100 text-emerald-800"
-                          : order.status === "Preparing"
-                          ? "bg-orange-100 text-orange-800"
-                          : "bg-blue-100 text-blue-800"
-                      }`}
-                    >
-                      {order.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                          order.paymentStatus === "Paid"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : order.paymentStatus === "Failed"
+                            ? "bg-red-50 text-red-700 border-red-200"
+                            : order.paymentStatus === "Refunded"
+                            ? "bg-purple-50 text-purple-700 border-purple-200"
+                            : "bg-amber-50 text-amber-700 border-amber-200"
+                        }`}
+                      >
+                        {order.paymentStatus === "Paid" ? "✓ Paid" : "⏳ " + (order.paymentStatus || "Pending")}
+                      </span>
+
+                      <span
+                        className={`text-xs font-bold px-3 py-1 rounded-full ${
+                          order.status === "Ready"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : order.status === "Preparing"
+                            ? "bg-orange-100 text-orange-800"
+                            : "bg-blue-100 text-blue-800"
+                        }`}
+                      >
+                        {order.status}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Order Items List */}

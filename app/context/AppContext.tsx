@@ -357,7 +357,8 @@ interface AppContextType {
   selectedSlotId: string;
   setSelectedSlotId: (slotId: string) => void;
   orders: Order[];
-  placeOrder: (slotId: string) => Order | null;
+  placeOrder: (slotId: string, paymentMethod?: string) => Order | null;
+  reorderPastOrder: (order: Order) => Promise<{ success: boolean; outOfStockItems: string[] }>;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   activeOrder: Order | null;
   preferences: CustomerPreferences;
@@ -508,16 +509,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const socket = io("http://localhost:5000", { transports: ["websocket"] });
     socket.emit("join_user_room", currentUser.id);
+
     socket.on("notification", (notification: { type: string; title: string; message: string }) => {
       if (notification.type === "ORDER_READY" && !preferences.notifyOnReady) return;
       if (notification.type === "ORDER_DELAYED" && !preferences.notifyOnDelay) return;
       showToast(`${notification.title}: ${notification.message}`);
     });
 
+    // Phase 3: Catch pickup_time_changed event and trigger toast alert
+    socket.on("pickup_time_changed", (data: { orderId?: string; order_id?: string; pickup_slot?: string; pickup_time?: string; message?: string }) => {
+      showToast(data.message || "Your scheduled pickup time has been updated.");
+      if (data.orderId || data.order_id) {
+        setOrders((prev) =>
+          prev.map((ord) => {
+            if (ord.id === data.orderId || ord.id === data.order_id) {
+              return {
+                ...ord,
+                pickupSlot: data.pickup_slot || ord.pickupSlot,
+              };
+            }
+            return ord;
+          })
+        );
+      }
+      fetchOrders();
+    });
+
+    socket.on("payment_status_updated", (data: { orderId: string; paymentStatus: string }) => {
+      setOrders((prev) =>
+        prev.map((ord) =>
+          ord.id === data.orderId
+            ? { ...ord, paymentStatus: data.paymentStatus as any }
+            : ord
+        )
+      );
+      showToast(`💳 Payment status updated: ${data.paymentStatus}`);
+    });
+
     return () => {
       socket.disconnect();
     };
-  }, [isAuthenticated, currentUser.id, preferences.notifyOnReady, preferences.notifyOnDelay, showToast]);
+  }, [isAuthenticated, currentUser.id, preferences.notifyOnReady, preferences.notifyOnDelay, showToast, fetchOrders]);
 
   // ─── Role Switch (login as different role) ────────────
   const setRole = useCallback(
@@ -714,7 +746,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ─── Place Pre-Order (connected to backend) ───────────
   const placeOrder = useCallback(
-    (slotId: string): Order | null => {
+    (slotId: string, paymentMethod: string = "smart_card"): Order | null => {
       if (!isAuthenticated) {
         showToast("🔒 Only logged in users can place pre-orders! Please log in first.");
         return null;
@@ -733,6 +765,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         quantity: ci.quantity,
         special_instruction: ci.specialInstruction || "",
       }));
+
+      const computedPaymentStatus = paymentMethod === "cash_on_counter" ? "Pending" : "Paid";
 
       // Create a local optimistic order immediately for UX
       const tokenNum = `C-0${24 + orders.length}`;
@@ -756,20 +790,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         estimatedReadyTime: "~10 min",
         prepProgress: 15,
         status: "Placed",
+        paymentStatus: computedPaymentStatus as any,
+        paymentMethod: paymentMethod,
         pickupCounter: targetSlot?.stationName || "Counter Station B",
       };
 
       // Add optimistically
       setOrders((prev) => [newOrder, ...prev]);
       clearCart();
-      showToast(`Pre-Order Confirmed! Token #${tokenNum} issued.`);
+      showToast(`Pre-Order Confirmed (${computedPaymentStatus})! Token #${tokenNum} issued.`);
 
       // Fire and forget: send to backend
       orderAPI
         .create({
           items: orderItems,
           pickup_slot: targetSlot?.timeSlot || "",
-          payment_method: "cash_on_counter",
+          payment_method: paymentMethod,
           idempotency_key: `idem-${Date.now()}`,
         })
         .then((res) => {
@@ -827,6 +863,97 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     },
     [showToast, fetchOrders]
+  );
+
+  // ─── Reorder Past Order (Phase 1: Customer Reordering) ─────────
+  const reorderPastOrder = useCallback(
+    async (order: Order): Promise<{ success: boolean; outOfStockItems: string[] }> => {
+      try {
+        const res = await orderAPI.reorder(order.id);
+        if (res && res.data) {
+          const { items, out_of_stock_items } = res.data;
+
+          if (items.length === 0) {
+            showToast("⚠️ All items from this past order are currently out of stock!");
+            return {
+              success: false,
+              outOfStockItems: out_of_stock_items.map((i) => i.item_name),
+            };
+          }
+
+          const newCartItems: CartItem[] = items.map((it) => {
+            const existingMenu = menu.find((m) => m.id === it.item_id || m.name === it.item_name);
+            const menuItem: MenuItem = existingMenu || {
+              id: it.item_id,
+              name: it.item_name,
+              category: it.category || "Meals",
+              price: it.price,
+              image:
+                it.image ||
+                "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80",
+              availableQuantity: it.available_quantity,
+              preparationTime: 5,
+              status: "Available",
+            };
+
+            return {
+              menuItem: { ...menuItem, price: it.price },
+              quantity: it.quantity,
+              specialInstruction: it.special_instruction || "",
+            };
+          });
+
+          setCart(newCartItems);
+
+          if (out_of_stock_items.length > 0) {
+            const names = out_of_stock_items.map((i) => i.item_name).join(", ");
+            showToast(`⚠️ Out of stock items excluded: ${names}`);
+          } else {
+            showToast(`🛒 Reorder added to cart! Proceeding to checkout.`);
+          }
+
+          return {
+            success: true,
+            outOfStockItems: out_of_stock_items.map((i) => i.item_name),
+          };
+        }
+      } catch (err: any) {
+        console.warn("[API] orderAPI.reorder failed, using client fallback:", err);
+      }
+
+      // Fallback client-side matching
+      const validCartItems: CartItem[] = [];
+      const outOfStockNames: string[] = [];
+
+      for (const item of order.items) {
+        const menuItem = menu.find((m) => m.id === item.menuItemId || m.name === item.name);
+        if (!menuItem || menuItem.status === "Sold Out" || menuItem.availableQuantity <= 0) {
+          outOfStockNames.push(item.name);
+        } else {
+          validCartItems.push({
+            menuItem,
+            quantity: Math.min(item.quantity, menuItem.availableQuantity),
+            specialInstruction: item.specialInstruction || "",
+          });
+        }
+      }
+
+      if (validCartItems.length === 0) {
+        showToast("⚠️ All items in this past order are currently out of stock!");
+        return { success: false, outOfStockItems: outOfStockNames };
+      }
+
+      setCart(validCartItems);
+
+      if (outOfStockNames.length > 0) {
+        showToast(`⚠️ Out of stock items excluded: ${outOfStockNames.join(", ")}`);
+      } else {
+        showToast(`🛒 Reorder added to cart! Proceeding to checkout.`);
+      }
+
+      return { success: true, outOfStockItems: outOfStockNames };
+    },
+    [menu, showToast]
   );
 
   const activeOrder =
@@ -948,6 +1075,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedSlotId,
         orders,
         placeOrder,
+        reorderPastOrder,
         updateOrderStatus,
         activeOrder,
         preferences,

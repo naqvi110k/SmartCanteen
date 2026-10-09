@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useApp } from "../app/context/AppContext";
 import { MenuItem } from "../app/types";
-import { aiAPI, analyticsAPI, queueAPI } from "../app/lib/api";
+import { aiAPI, analyticsAPI, queueAPI, managerAPI } from "../app/lib/api";
 
 interface AIOperationsData {
   demand: { itemName: string; projectedPortions: number; demandLevel: string; peakTime: string }[];
@@ -14,6 +14,7 @@ interface AIOperationsData {
   sales: { averageOrderValueRs: string; insights: string[] };
   recommendations: { item_name: string; category: string; available_quantity: number }[];
 }
+
 export const ManagerDashboard: React.FC = () => {
   const {
     menu,
@@ -26,10 +27,123 @@ export const ManagerDashboard: React.FC = () => {
     showToast,
   } = useApp();
 
+  const [activeTab, setActiveTab] = useState<"operations" | "staff">("operations");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Partial<MenuItem> | null>(null);
   const [aiOperations, setAiOperations] = useState<AIOperationsData | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(true);
+
+  // Staff Management State (Phase 4: Manager Permissions)
+  const [staffList, setStaffList] = useState<any[]>([]);
+  const [isLoadingStaff, setIsLoadingStaff] = useState(false);
+  const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+  const [editingStaffId, setEditingStaffId] = useState<string | null>(null);
+  const [staffForm, setStaffForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    phone: "",
+    account_status: "active",
+  });
+
+  const fetchStaff = async () => {
+    setIsLoadingStaff(true);
+    try {
+      const res = await managerAPI.getStaff();
+      if (res && res.data) {
+        setStaffList(res.data);
+      }
+    } catch (err) {
+      console.warn("[Manager] Failed to fetch staff:", err);
+      // Fallback seed staff list
+      setStaffList([
+        {
+          _id: "64f1a2b3c4d5e6f7a8b9c102",
+          name: "Kitchen Chef / Staff",
+          email: "staff@canteen.com",
+          role: "staff",
+          account_status: "active",
+          phone: "+923001234568",
+        },
+        {
+          _id: "64f1a2b3c4d5e6f7a8b9c105",
+          name: "Marcus Vance (Head Cook)",
+          email: "marcus.cook@canteen.edu.pk",
+          role: "staff",
+          account_status: "active",
+          phone: "+923001234569",
+        },
+      ]);
+    } finally {
+      setIsLoadingStaff(false);
+    }
+  };
+
+  const handleOpenAddStaff = () => {
+    setEditingStaffId(null);
+    setStaffForm({
+      name: "",
+      email: "",
+      password: "",
+      phone: "",
+      account_status: "active",
+    });
+    setIsStaffModalOpen(true);
+  };
+
+  const handleOpenEditStaff = (staff: any) => {
+    setEditingStaffId(staff._id || staff.id);
+    setStaffForm({
+      name: staff.name,
+      email: staff.email,
+      password: "",
+      phone: staff.phone || "",
+      account_status: staff.account_status || "active",
+    });
+    setIsStaffModalOpen(true);
+  };
+
+  const handleSaveStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingStaffId) {
+        // Edit staff
+        const updatePayload: any = {
+          name: staffForm.name,
+          phone: staffForm.phone,
+          account_status: staffForm.account_status,
+        };
+        if (staffForm.password.trim()) {
+          updatePayload.password = staffForm.password;
+        }
+        await managerAPI.updateStaff(editingStaffId, updatePayload);
+        showToast(`Kitchen staff "${staffForm.name}" updated successfully!`);
+      } else {
+        // Create new staff
+        if (!staffForm.password || staffForm.password.length < 6) {
+          showToast("Password must be at least 6 characters");
+          return;
+        }
+        await managerAPI.createStaff(staffForm);
+        showToast(`New kitchen staff member "${staffForm.name}" added successfully!`);
+      }
+      setIsStaffModalOpen(false);
+      fetchStaff();
+    } catch (err: any) {
+      showToast(`Error: ${err.message || "Failed to save kitchen staff"}`);
+    }
+  };
+
+  const handleDeleteStaff = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to remove kitchen staff member "${name}"?`)) return;
+    try {
+      await managerAPI.deleteStaff(id);
+      showToast(`Kitchen staff member "${name}" removed.`);
+      fetchStaff();
+    } catch (err: any) {
+      showToast(`Error: ${err.message || "Failed to remove kitchen staff"}`);
+    }
+  };
 
   const loadAIOperations = async () => {
     setIsLoadingAI(true);
@@ -192,6 +306,37 @@ export const ManagerDashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+        <button
+          onClick={() => setActiveTab("operations")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            activeTab === "operations"
+              ? "bg-slate-900 text-white shadow-md"
+              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+          }`}
+        >
+          <span className="material-symbols-outlined text-[18px]">dashboard</span>
+          <span>Operations & Analytics</span>
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab("staff");
+            fetchStaff();
+          }}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            activeTab === "staff"
+              ? "bg-orange-600 text-white shadow-md"
+              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+          }`}
+        >
+          <span className="material-symbols-outlined text-[18px]">badge</span>
+          <span>Staff Management (Kitchen Staff)</span>
+        </button>
+      </div>
+
+      {activeTab === "operations" ? (
+        <>
       {/* AI Insights & Demand Predictions */}
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
         <div className="flex items-center justify-between">
@@ -582,6 +727,243 @@ export const ManagerDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+      </>
+      ) : (
+      /* Staff Management Tab View */
+      <div className="flex flex-col gap-6 anim-fade-in">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-orange-600 text-[24px]">group</span>
+              <h2 className="text-lg font-bold text-slate-900">Kitchen Staff Roster</h2>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              Managers have role-based authorization strictly to register and oversee Kitchen Staff members.
+            </p>
+          </div>
+          <button
+            onClick={handleOpenAddStaff}
+            className="px-4 py-2.5 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-md active:scale-95 self-start md:self-auto transition-all"
+          >
+            <span className="material-symbols-outlined text-[18px]">person_add</span>
+            <span>Add Kitchen Staff Member</span>
+          </button>
+        </div>
+
+        {/* Staff Table / Cards */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-700">Active Kitchen Crew ({staffList.length})</span>
+            <button
+              onClick={fetchStaff}
+              disabled={isLoadingStaff}
+              className="text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1"
+            >
+              <span className={`material-symbols-outlined text-[16px] ${isLoadingStaff ? "animate-spin" : ""}`}>
+                sync
+              </span>
+              <span>Refresh</span>
+            </button>
+          </div>
+
+          {isLoadingStaff ? (
+            <div className="p-12 text-center text-slate-400 text-xs font-medium flex flex-col items-center gap-2">
+              <span className="material-symbols-outlined text-[32px] animate-spin text-orange-600">progress_activity</span>
+              <span>Loading kitchen staff directory...</span>
+            </div>
+          ) : staffList.length === 0 ? (
+            <div className="p-12 text-center text-slate-400 text-xs flex flex-col items-center gap-2">
+              <span className="material-symbols-outlined text-[36px] text-slate-300">person_off</span>
+              <span className="font-semibold text-slate-600">No kitchen staff registered yet.</span>
+              <button
+                onClick={handleOpenAddStaff}
+                className="mt-2 px-4 py-2 bg-orange-600 text-white text-xs font-bold rounded-xl"
+              >
+                Add First Staff Member
+              </button>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] border-b border-slate-200">
+                  <tr>
+                    <th className="py-3 px-4">Staff Name</th>
+                    <th className="py-3 px-4">Email Address</th>
+                    <th className="py-3 px-4">Phone Number</th>
+                    <th className="py-3 px-4">Assigned Role</th>
+                    <th className="py-3 px-4">Account Status</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {staffList.map((staff: any) => (
+                    <tr key={staff._id || staff.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-3.5 px-4 font-bold text-slate-900">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-bold flex items-center justify-center text-xs">
+                            {(staff.name || "K").charAt(0).toUpperCase()}
+                          </div>
+                          <span>{staff.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-600 font-medium">{staff.email}</td>
+                      <td className="py-3.5 px-4 text-slate-600">{staff.phone || "—"}</td>
+                      <td className="py-3.5 px-4">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800 border border-blue-200 flex items-center gap-1 w-max">
+                          <span className="material-symbols-outlined text-[12px]">restaurant</span>
+                          Kitchen Staff
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold flex items-center gap-1 w-max ${
+                            staff.account_status === "active" || staff.account_status === undefined
+                              ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                              : "bg-red-100 text-red-800 border border-red-200"
+                          }`}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                          {(staff.account_status || "active").toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleOpenEditStaff(staff)}
+                            className="p-1.5 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit Staff Member"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">edit</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteStaff(staff._id || staff.id, staff.name)}
+                            className="p-1.5 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Remove Staff Member"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+      )}
+
+      {/* Add / Edit Kitchen Staff Modal */}
+      {isStaffModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4 anim-fade-in-up">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-orange-600 text-[22px]">badge</span>
+                <h3 className="font-extrabold text-base text-slate-900">
+                  {editingStaffId ? "Edit Kitchen Staff" : "Add Kitchen Staff Member"}
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsStaffModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveStaff} className="flex flex-col gap-3 text-xs">
+              <div className="flex flex-col gap-1">
+                <label className="font-bold text-slate-700">Staff Full Name</label>
+                <input
+                  type="text"
+                  value={staffForm.name}
+                  onChange={(e) => setStaffForm({ ...staffForm, name: e.target.value })}
+                  placeholder="e.g., Marcus Vance"
+                  required
+                  className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="font-bold text-slate-700">Email Address</label>
+                <input
+                  type="email"
+                  value={staffForm.email}
+                  disabled={!!editingStaffId}
+                  onChange={(e) => setStaffForm({ ...staffForm, email: e.target.value })}
+                  placeholder="e.g., marcus.staff@canteen.edu.pk"
+                  required
+                  className={`h-10 px-3 border border-slate-200 rounded-xl font-medium ${
+                    editingStaffId ? "bg-slate-100 text-slate-500 cursor-not-allowed" : ""
+                  }`}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="font-bold text-slate-700">
+                  {editingStaffId ? "New Password (leave blank to keep current)" : "Password"}
+                </label>
+                <input
+                  type="password"
+                  value={staffForm.password}
+                  onChange={(e) => setStaffForm({ ...staffForm, password: e.target.value })}
+                  placeholder={editingStaffId ? "••••••••" : "Min 6 characters"}
+                  required={!editingStaffId}
+                  className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="font-bold text-slate-700">Phone Number</label>
+                  <input
+                    type="tel"
+                    value={staffForm.phone}
+                    onChange={(e) => setStaffForm({ ...staffForm, phone: e.target.value })}
+                    placeholder="+923001234567"
+                    className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="font-bold text-slate-700">Account Status</label>
+                  <select
+                    value={staffForm.account_status}
+                    onChange={(e) => setStaffForm({ ...staffForm, account_status: e.target.value })}
+                    className="h-10 px-3 border border-slate-200 rounded-xl font-medium bg-white"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-[11px] text-blue-700 flex items-center gap-2 mt-1">
+                <span className="material-symbols-outlined text-[16px] shrink-0">info</span>
+                <span>Role is automatically locked to <strong>Kitchen Staff</strong> for canteen security.</span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsStaffModalOpen(false)}
+                  className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-orange-600 text-white font-bold rounded-xl shadow-md hover:bg-orange-500"
+                >
+                  {editingStaffId ? "Update Staff" : "Add Staff"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Edit / Add Menu Item Modal */}
       {isModalOpen && editingItem && (
