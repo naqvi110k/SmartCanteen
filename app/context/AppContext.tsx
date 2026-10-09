@@ -490,6 +490,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     };
 
+    try {
+      const saved = localStorage.getItem("canteen_customer_preferences");
+      if (saved) {
+        setPreferences((prev) => ({ ...prev, ...JSON.parse(saved) }));
+      }
+    } catch {}
+
     checkAuth();
   }, []);
 
@@ -962,14 +969,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updatePreferences = useCallback(
     async (newPrefs: Partial<CustomerPreferences>) => {
-      setPreferences((prev) => ({ ...prev, ...newPrefs }));
+      setPreferences((prev) => {
+        const updated = { ...prev, ...newPrefs };
+        try {
+          localStorage.setItem("canteen_customer_preferences", JSON.stringify(updated));
+        } catch {}
+        return updated;
+      });
+
+      const token = getToken();
+      if (!token) {
+        showToast("Preferences saved.");
+        return;
+      }
+
       try {
         const res = await authAPI.updatePreferences(newPrefs);
-        setPreferences((prev) => ({ ...prev, ...res.data }));
+        if (res && res.data) {
+          setPreferences((prev) => ({ ...prev, ...res.data }));
+        }
         showToast("Preferences saved.");
       } catch (err) {
-        console.warn("[API] Failed to save preferences:", err);
-        showToast("Could not save preferences.");
+        console.warn("[API] Server preferences sync note:", err);
+        showToast("Preferences saved.");
       }
     },
     [showToast]

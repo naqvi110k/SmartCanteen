@@ -28,43 +28,43 @@ export default function LoginPage() {
     defaultEmail: string;
     redirectTo: string;
   }[] = [
-    {
-      role: "customer",
-      title: "Student / Employee",
-      description: "Pre-order meals, select 15-min pickup slots & receive digital tokens",
-      icon: "person",
-      color: "border-orange-500 bg-orange-50/50 text-orange-600",
-      defaultEmail: "customer@canteen.com",
-      redirectTo: "/",
-    },
-    {
-      role: "kitchen",
-      title: "Kitchen / Staff",
-      description: "Live kitchen queue board, QR token collection scanner & order status advancer",
-      icon: "soup_kitchen",
-      color: "border-emerald-500 bg-emerald-50/50 text-emerald-600",
-      defaultEmail: "staff@canteen.com",
-      redirectTo: "/kitchen",
-    },
-    {
-      role: "manager",
-      title: "Canteen Manager",
-      description: "Manage menu prices, stock levels, slot limits, sales reports & AI insights",
-      icon: "query_stats",
-      color: "border-blue-500 bg-blue-50/50 text-blue-600",
-      defaultEmail: "manager@canteen.com",
-      redirectTo: "/manager",
-    },
-    {
-      role: "admin",
-      title: "System Admin",
-      description: "Manage users, canteen accounts, permissions, audit logs & categories",
-      icon: "admin_panel_settings",
-      color: "border-purple-500 bg-purple-50/50 text-purple-600",
-      defaultEmail: "admin@canteen.com",
-      redirectTo: "/admin",
-    },
-  ];
+      {
+        role: "customer",
+        title: "Student / Employee",
+        description: "Pre-order meals, select 15-min pickup slots & receive digital tokens",
+        icon: "person",
+        color: "border-orange-500 bg-orange-50/50 text-orange-600",
+        defaultEmail: "customer@canteen.com",
+        redirectTo: "/",
+      },
+      {
+        role: "kitchen",
+        title: "Kitchen / Staff",
+        description: "Live kitchen queue board, QR token collection scanner & order status advancer",
+        icon: "soup_kitchen",
+        color: "border-emerald-500 bg-emerald-50/50 text-emerald-600",
+        defaultEmail: "staff@canteen.com",
+        redirectTo: "/kitchen",
+      },
+      {
+        role: "manager",
+        title: "Canteen Manager",
+        description: "Manage menu prices, stock levels, slot limits, sales reports & AI insights",
+        icon: "query_stats",
+        color: "border-blue-500 bg-blue-50/50 text-blue-600",
+        defaultEmail: "manager@canteen.com",
+        redirectTo: "/manager",
+      },
+      {
+        role: "admin",
+        title: "System Admin",
+        description: "Manage users, canteen accounts, permissions, audit logs & categories",
+        icon: "admin_panel_settings",
+        color: "border-purple-500 bg-purple-50/50 text-purple-600",
+        defaultEmail: "admin@canteen.com",
+        redirectTo: "/admin",
+      },
+    ];
 
   const handleRoleSelect = (r: UserRole) => {
     setSelectedRole(r);
@@ -150,11 +150,10 @@ export default function LoginPage() {
               <div
                 key={item.role}
                 onClick={() => handleRoleSelect(item.role)}
-                className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between gap-2 ${
-                  selectedRole === item.role
+                className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between gap-2 ${selectedRole === item.role
                     ? `${item.color} ring-2 ring-orange-500/20 shadow-md`
                     : "bg-slate-50 border-slate-200 hover:border-slate-300"
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
