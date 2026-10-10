@@ -22,9 +22,9 @@ export const OrderHistory: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto w-full px-4 pt-4 pb-32 flex flex-col gap-5">
+    <div className="max-w-4xl mx-auto w-full px-3 sm:px-4 pt-3 sm:pt-4 pb-32 flex flex-col gap-4 sm:gap-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-extrabold text-slate-900 font-headline">
+        <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 font-headline">
           Your Order History
         </h2>
         <span className="text-xs font-semibold text-slate-500">
@@ -33,8 +33,8 @@ export const OrderHistory: React.FC = () => {
       </div>
 
       {orders.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 text-center flex flex-col items-center border border-slate-100">
-          <span className="material-symbols-outlined text-[54px] text-slate-300 mb-2">
+        <div className="bg-white rounded-2xl p-8 sm:p-12 text-center flex flex-col items-center border border-slate-100">
+          <span className="material-symbols-outlined text-[48px] sm:text-[54px] text-slate-300 mb-2">
             history
           </span>
           <p className="font-bold text-slate-800 text-sm">No previous orders found</p>
@@ -43,23 +43,23 @@ export const OrderHistory: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3 sm:gap-4">
           {orders.map((order) => (
             <div
               key={order.id}
-              className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-3"
+              className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100 flex flex-col gap-3"
             >
               {/* Header: Token & Status */}
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 font-extrabold text-sm flex items-center justify-center font-headline shadow-sm">
+              <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-orange-100 text-orange-600 font-extrabold text-xs sm:text-sm flex items-center justify-center font-headline shadow-sm shrink-0">
                     {order.tokenNumber}
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-extrabold text-slate-900">
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-extrabold text-slate-900 truncate">
                       Order #{order.id}
                     </span>
-                    <span className="text-[11px] text-slate-500">
+                    <span className="text-[10px] sm:text-[11px] text-slate-500 truncate">
                       {order.orderTime} • Slot: {order.pickupSlot}
                     </span>
                   </div>
@@ -114,12 +114,12 @@ export const OrderHistory: React.FC = () => {
               </div>
 
               {/* Footer: Reorder & Total */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+              <div className="pt-3 border-t border-slate-100 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
                 <div className="flex flex-col">
                   <span className="text-[10px] text-slate-400 font-bold uppercase">
                     Total Paid
                   </span>
-                  <span className="text-base font-extrabold text-slate-900">
+                  <span className="text-sm sm:text-base font-extrabold text-slate-900">
                     ${order.totalAmount.toFixed(2)}
                   </span>
                 </div>
@@ -127,7 +127,7 @@ export const OrderHistory: React.FC = () => {
                 <button
                   onClick={() => handleReorder(order)}
                   disabled={reorderingId === order.id}
-                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                  className="px-3.5 sm:px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 active:scale-95 shrink-0"
                 >
                   <span className={`material-symbols-outlined text-[16px] ${reorderingId === order.id ? "animate-spin" : ""}`}>
                     {reorderingId === order.id ? "progress_activity" : "replay"}

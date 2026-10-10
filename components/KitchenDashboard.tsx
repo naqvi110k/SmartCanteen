@@ -77,7 +77,7 @@ export const KitchenDashboard: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto w-full px-4 pt-4 pb-32 flex flex-col gap-6">
+    <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 pt-3 sm:pt-4 pb-32 flex flex-col gap-4 sm:gap-6">
       {/* Optical / Digital Scanner Modal */}
       {isScannerModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
@@ -203,7 +203,7 @@ export const KitchenDashboard: React.FC = () => {
       )}
 
       {/* Kitchen Banner Header */}
-      <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-xl border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-slate-900 text-white rounded-2xl p-4 sm:p-6 shadow-xl border border-slate-800 flex flex-col gap-3 md:flex-row items-start md:items-center justify-between md:gap-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-md">
             <span className="material-symbols-outlined text-[28px]">
@@ -212,7 +212,7 @@ export const KitchenDashboard: React.FC = () => {
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-extrabold text-white font-headline">
+              <h1 className="text-base sm:text-xl font-extrabold text-white font-headline">
                 Kitchen Staff Display & Queue
               </h1>
               <span className="bg-emerald-500/20 text-emerald-400 font-bold text-[10px] uppercase px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
@@ -244,9 +244,9 @@ export const KitchenDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column (2 cols): Live Orders Queue */}
         <div className="lg:col-span-2 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-slate-900">
+              <h2 className="text-sm sm:text-base font-bold text-slate-900">
                 Live Kitchen Queue
               </h2>
               <span className="bg-orange-100 text-orange-800 font-extrabold text-xs px-2.5 py-0.5 rounded-full">
@@ -255,12 +255,12 @@ export const KitchenDashboard: React.FC = () => {
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl overflow-x-auto no-scrollbar">
               {["Active", "Preparing", "Ready", "Completed"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setSelectedFilter(tab)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                  className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
                     selectedFilter === tab
                       ? "bg-white text-slate-900 shadow-sm"
                       : "text-slate-600 hover:text-slate-900"
@@ -374,7 +374,7 @@ export const KitchenDashboard: React.FC = () => {
                   </div>
 
                   {/* Kitchen Action Buttons */}
-                  <div className="flex items-center justify-between pt-1">
+                  <div className="flex flex-wrap items-center justify-between pt-1 gap-2">
                     <button
                       onClick={() => updateOrderStatus(order.id, "Delayed")}
                       className="text-xs font-bold text-red-600 hover:underline flex items-center gap-1"
@@ -385,7 +385,7 @@ export const KitchenDashboard: React.FC = () => {
                       <span>Report Issue / Delay</span>
                     </button>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       {order.status === "Placed" && (
                         <>
                           <button

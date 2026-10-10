@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useApp } from "../app/context/AppContext";
 import { MenuItem } from "../app/types";
-import { aiAPI, analyticsAPI, queueAPI, managerAPI } from "../app/lib/api";
+import { adminAPI, aiAPI, analyticsAPI, queueAPI, managerAPI } from "../app/lib/api";
 
 interface AIOperationsData {
   demand: { itemName: string; projectedPortions: number; demandLevel: string; peakTime: string }[];
@@ -21,6 +21,7 @@ export const ManagerDashboard: React.FC = () => {
     stats,
     aiInsights,
     slots,
+    refreshSlots,
     saveMenuItem,
     deleteMenuItem,
     updateItemStock,
@@ -32,6 +33,35 @@ export const ManagerDashboard: React.FC = () => {
   const [editingItem, setEditingItem] = useState<Partial<MenuItem> | null>(null);
   const [aiOperations, setAiOperations] = useState<AIOperationsData | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(true);
+  const [slotCapacity, setSlotCapacity] = useState(20);
+  const [isSavingSlotCapacity, setIsSavingSlotCapacity] = useState(false);
+
+  useEffect(() => {
+    adminAPI.getSettings()
+      .then((response) => {
+        const value = Number(response.data?.max_orders_per_slot);
+        if (Number.isFinite(value) && value > 0) setSlotCapacity(value);
+      })
+      .catch(() => showToast("Slot settings are temporarily unavailable."));
+  }, [showToast]);
+
+  const saveSlotCapacity = async () => {
+    if (!Number.isInteger(slotCapacity) || slotCapacity < 1) {
+      showToast("Enter a whole number greater than zero.");
+      return;
+    }
+
+    setIsSavingSlotCapacity(true);
+    try {
+      await adminAPI.updateSettings({ max_orders_per_slot: slotCapacity });
+      await refreshSlots();
+      showToast("Pickup slot capacity updated.");
+    } catch {
+      showToast("Could not update pickup slot capacity.");
+    } finally {
+      setIsSavingSlotCapacity(false);
+    }
+  };
 
   // Staff Management State (Phase 4: Manager Permissions)
   const [staffList, setStaffList] = useState<any[]>([]);
@@ -236,9 +266,9 @@ export const ManagerDashboard: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto w-full px-4 pt-4 pb-32 flex flex-col gap-6">
+    <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 pt-3 sm:pt-4 pb-32 flex flex-col gap-4 sm:gap-6">
       {/* Manager Header & KPI Summary */}
-      <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-xl border border-slate-800 flex flex-col gap-4">
+      <div className="bg-slate-900 text-white rounded-2xl p-4 sm:p-6 shadow-xl border border-slate-800 flex flex-col gap-3 sm:gap-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-md">
@@ -247,8 +277,8 @@ export const ManagerDashboard: React.FC = () => {
               </span>
             </div>
             <div className="flex flex-col">
-              <h1 className="text-xl font-extrabold text-white font-headline">
-                Canteen Manager Operations & Analytics
+              <h1 className="text-base sm:text-xl font-extrabold text-white font-headline">
+                Canteen Manager Ops & Analytics
               </h1>
               <span className="text-xs text-slate-400">
                 Live Sales, Menu Item Editors, Inventory Controls & AI Demand Predictions
@@ -388,7 +418,7 @@ export const ManagerDashboard: React.FC = () => {
       </div>
 
       {/* Live AI Operations Cockpit */}
-      <section className="bg-slate-950 text-white rounded-2xl p-5 shadow-xl border border-slate-800 flex flex-col gap-5">
+      <section className="bg-slate-950 text-white rounded-2xl p-3 sm:p-5 shadow-xl border border-slate-800 flex flex-col gap-4 sm:gap-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
             <p className="text-[10px] uppercase tracking-[0.18em] text-cyan-400 font-bold">Live decision support</p>
@@ -491,7 +521,7 @@ export const ManagerDashboard: React.FC = () => {
         )}
       </section>
       {/* Live Dashboard Analytics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
         <AnalyticsValue label="Orders preparing" value={dashboardMetrics?.ordersPreparing ?? stats.preparingOrders} />
         <AnalyticsValue label="Orders ready" value={dashboardMetrics?.ordersReady ?? stats.readyOrders} />
         <AnalyticsValue label="Peak ordering time" value={dashboardMetrics?.peakOrderingTime ?? stats.peakOrderingTime} />
@@ -683,6 +713,29 @@ export const ManagerDashboard: React.FC = () => {
             <p className="text-xs text-slate-500">
               Set maximum order capacity per slot to prevent kitchen overload.
             </p>
+
+            <div className="flex items-center gap-2">
+              <label htmlFor="slot-capacity" className="text-xs font-semibold text-slate-700">
+                Maximum orders per slot
+              </label>
+              <input
+                id="slot-capacity"
+                type="number"
+                min="1"
+                step="1"
+                value={slotCapacity}
+                onChange={(event) => setSlotCapacity(Number(event.target.value))}
+                className="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-900"
+              />
+              <button
+                type="button"
+                onClick={saveSlotCapacity}
+                disabled={isSavingSlotCapacity}
+                className="rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+              >
+                {isSavingSlotCapacity ? "Saving..." : "Save"}
+              </button>
+            </div>
 
             <div className="divide-y divide-slate-100">
               {slots.map((slot) => (

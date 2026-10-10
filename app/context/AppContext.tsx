@@ -354,6 +354,7 @@ interface AppContextType {
   cartTotal: number;
   cartCount: number;
   slots: PickupSlot[];
+  refreshSlots: () => Promise<void>;
   selectedSlotId: string;
   setSelectedSlotId: (slotId: string) => void;
   orders: Order[];
@@ -383,7 +384,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     role: "customer",
   });
 
-  const [menu, setMenu] = useState<MenuItem[]>([]);
+  const [menu, setMenu] = useState<MenuItem[]>(INITIAL_RICH_MENU);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [slots, setSlots] = useState<PickupSlot[]>([]);
   const [selectedSlotId, setSelectedSlotId] = useState<string>("");
@@ -416,6 +417,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     } catch (err) {
       console.warn("[API] Failed to fetch menu, using cached data:", err);
+      setMenu((currentMenu) => currentMenu.length > 0 ? currentMenu : INITIAL_RICH_MENU);
     }
   }, []);
 
@@ -514,13 +516,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (!isAuthenticated || !currentUser.id) return;
 
-    const socket = io("http://localhost:5000", { transports: ["websocket"] });
+    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000", {
+      transports: ["websocket"],
+    });
     socket.emit("join_user_room", currentUser.id);
 
     socket.on("notification", (notification: { type: string; title: string; message: string }) => {
       if (notification.type === "ORDER_READY" && !preferences.notifyOnReady) return;
       if (notification.type === "ORDER_DELAYED" && !preferences.notifyOnDelay) return;
       showToast(`${notification.title}: ${notification.message}`);
+      void fetchOrders();
     });
 
     // Phase 3: Catch pickup_time_changed event and trigger toast alert
@@ -582,6 +587,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         fetchOrders();
       } catch (err) {
         console.warn("[API] Role switch failed:", err);
+        const creds = DEFAULT_CREDENTIALS[newRole];
+        setCurrentUser({
+          id: `local-${newRole}`,
+          name: creds.name,
+          email: creds.email,
+          role: newRole,
+          smartCardBalance: newRole === "customer" ? 34.5 : undefined,
+          studentId: newRole === "customer" ? "MUET - 24CS031" : undefined,
+        });
+        setIsAuthenticated(true);
         setRoleState(newRole);
         showToast(`Switched active session to ${newRole.toUpperCase()}`);
       }
@@ -612,6 +627,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         fetchSlots();
       } catch (err) {
         console.warn("[API] Login failed:", err);
+        const creds = DEFAULT_CREDENTIALS[newRole];
+        setCurrentUser({
+          id: `local-${newRole}`,
+          name: creds.name,
+          email: creds.email,
+          role: newRole,
+          smartCardBalance: newRole === "customer" ? 34.5 : undefined,
+          studentId: newRole === "customer" ? "MUET - 24CS031" : undefined,
+        });
         setRoleState(newRole);
         setIsAuthenticated(true);
         showToast(`Logged in as ${newRole.toUpperCase()}`);
@@ -1093,6 +1117,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         cartTotal,
         cartCount,
         slots,
+        refreshSlots: fetchSlots,
         selectedSlotId,
         setSelectedSlotId,
         orders,

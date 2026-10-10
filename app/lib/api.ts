@@ -3,7 +3,7 @@
  * Connects Next.js frontend to Express backend at localhost:5000
  */
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api`;
 
 // ─── Token Management ─────────────────────────────────
 let authToken: string | null = null;
@@ -476,15 +476,21 @@ export function mapBackendOrder(b: BackendOrder): Order {
 
 export function mapBackendSlot(b: {
   slot: string;
-  available: number;
-  totalCapacity: number;
+  available?: number;
+  totalCapacity?: number;
+  remaining?: number;
+  capacity?: number;
+  selectable?: boolean;
 }): PickupSlot {
+  const maxCapacity = Number(b.totalCapacity ?? b.capacity ?? 0);
+  const available = Number(b.available ?? b.remaining ?? maxCapacity);
+
   return {
     id: `slot-${b.slot}`,
     timeSlot: b.slot,
-    maxCapacity: b.totalCapacity,
-    currentOrders: b.totalCapacity - b.available,
-    isAvailable: b.available > 0,
+    maxCapacity,
+    currentOrders: Math.max(0, maxCapacity - available),
+    isAvailable: b.selectable ?? available > 0,
     stationName: "Counter Station B — Hot Express",
   };
 }

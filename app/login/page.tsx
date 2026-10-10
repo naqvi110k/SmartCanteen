@@ -119,25 +119,36 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f9ff] flex items-center justify-center p-4">
-      <div className="max-w-xl w-full bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-slate-100 flex flex-col gap-6">
+    <div className="min-h-screen bg-[#f8f9ff] flex items-center justify-center p-3 sm:p-4">
+      <div className="max-w-xl w-full bg-white rounded-3xl p-5 sm:p-6 md:p-8 shadow-xl border border-slate-100 flex flex-col gap-5 sm:gap-6 relative">
+        <div className="flex items-center justify-between w-full">
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-900"
+          >
+            <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+            <span>Back to Canteen</span>
+          </button>
+          <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            Live (Port 5000)
+          </div>
+        </div>
+
         {/* Brand Header */}
-        <div className="flex flex-col items-center text-center gap-2">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-orange-600 via-amber-500 to-orange-500 flex items-center justify-center text-white shadow-lg">
-            <span className="material-symbols-outlined text-[32px]">
+        <div className="flex flex-col items-center text-center gap-1.5 sm:gap-2">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-orange-600 via-amber-500 to-orange-500 flex items-center justify-center text-white shadow-lg">
+            <span className="material-symbols-outlined text-[28px] sm:text-[32px]">
               restaurant
             </span>
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 font-headline">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-headline">
             Smart Canteen Portal
           </h1>
           <p className="text-xs text-slate-500 max-w-sm">
             {isSignup ? "Create a customer account to order meals and receive digital tokens." : "Sign in to access Pre-Order Management, Digital Tokens, Kitchen Queue, or Manager Operations."}
           </p>
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            Backend Connected (Port 5000)
-          </div>
         </div>
 
         {/* Role Selector Cards */}

@@ -36,9 +36,9 @@ export const CartCheckout: React.FC = () => {
   const currentSlot = slots.find((s) => s.id === selectedSlotId) || slots[1];
 
   return (
-    <div className="max-w-4xl mx-auto w-full px-4 pt-4 pb-32">
+    <div className="max-w-4xl mx-auto w-full px-3 sm:px-4 pt-3 sm:pt-4 pb-32">
       {/* Back to menu Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
         <button
           onClick={() => router.push("/")}
           className="inline-flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-slate-900 bg-white px-3 py-1.5 rounded-xl border border-slate-200"
@@ -384,7 +384,7 @@ export const CartCheckout: React.FC = () => {
 
       {/* Total & Order Submission */}
       {cart.length > 0 && (
-        <div className="bg-slate-900 text-white rounded-2xl p-5 shadow-xl border border-slate-800 flex flex-col gap-4">
+        <div className="bg-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-xl border border-slate-800 flex flex-col gap-3 sm:gap-4">
           <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">
             Payment & Pre-Order Summary
           </h3>
@@ -401,7 +401,7 @@ export const CartCheckout: React.FC = () => {
             <div className="flex justify-between">
               <span>Selected Pickup Slot:</span>
               <span className="font-bold text-orange-400">
-                {currentSlot.timeSlot}
+                {currentSlot?.timeSlot || "Select a pickup slot"}
               </span>
             </div>
             <div className="flex justify-between pt-2 border-t border-slate-800 text-base font-extrabold text-white">
@@ -412,7 +412,7 @@ export const CartCheckout: React.FC = () => {
 
           <button
             onClick={handleConfirmOrder}
-            className="w-full py-3.5 bg-orange-600 hover:bg-orange-500 text-white font-extrabold text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95"
+            className="w-full py-3 sm:py-3.5 bg-orange-600 hover:bg-orange-500 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95"
           >
             <span className="material-symbols-outlined text-[20px]">
               confirmation_number

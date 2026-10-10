@@ -212,9 +212,9 @@ export const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto w-full px-4 pt-4 pb-32 flex flex-col gap-6">
+    <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 pt-3 sm:pt-4 pb-32 flex flex-col gap-4 sm:gap-6">
       {/* Admin Header Banner */}
-      <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-slate-900 text-white rounded-2xl p-4 sm:p-6 shadow-xl border border-slate-800 flex flex-col gap-3 md:flex-row md:items-center justify-between md:gap-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-purple-600 flex items-center justify-center text-white shadow-md">
             <span className="material-symbols-outlined text-[28px]">
@@ -223,7 +223,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-extrabold text-white font-headline">
+              <h1 className="text-base sm:text-xl font-extrabold text-white font-headline">
                 System Administrator Console
               </h1>
               <span className="bg-purple-500/20 text-purple-300 font-bold text-[10px] uppercase px-2 py-0.5 rounded-full border border-purple-500/30">
@@ -237,7 +237,7 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Admin Section Tabs */}
-        <div className="flex items-center gap-1 bg-slate-800 p-1.5 rounded-xl border border-slate-700 overflow-x-auto">
+        <div className="flex items-center gap-1 bg-slate-800 p-1.5 rounded-xl border border-slate-700 overflow-x-auto no-scrollbar">
           {[
             { key: "users", label: "Users & Accounts" },
             { key: "canteens", label: "Canteen Hubs" },
@@ -248,7 +248,7 @@ export const AdminDashboard: React.FC = () => {
             <button
               key={t.key}
               onClick={() => setActiveAdminTab(t.key as any)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all ${
                 activeAdminTab === t.key
                   ? "bg-purple-600 text-white shadow-sm"
                   : "text-slate-400 hover:text-white"
@@ -381,7 +381,7 @@ export const AdminDashboard: React.FC = () => {
             ).map((log) => (
               <div
                 key={log._id || log.id}
-                className="py-3 flex items-center justify-between gap-4"
+                className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="text-slate-400 font-semibold shrink-0">

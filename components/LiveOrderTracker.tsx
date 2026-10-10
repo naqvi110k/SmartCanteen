@@ -44,10 +44,10 @@ export const LiveOrderTracker: React.FC = () => {
   const canCancel = ["Placed", "Accepted"].includes(activeOrder.status);
 
   return (
-    <div className="max-w-2xl mx-auto w-full px-4 pt-4 pb-32 flex flex-col gap-5">
+    <div className="max-w-2xl mx-auto w-full px-3 sm:px-4 pt-4 pb-32 flex flex-col gap-5">
       {/* Live Kitchen Banner with WebSocket Indicator */}
       <div className="w-full bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 text-orange-950 rounded-2xl p-4 shadow-sm flex flex-col gap-2 relative overflow-hidden">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <span className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
@@ -97,17 +97,17 @@ export const LiveOrderTracker: React.FC = () => {
       </div>
 
       {/* Progress Timeline Stepper */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center justify-between">
+      <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm border border-slate-100 flex items-start justify-between gap-1 overflow-hidden">
         {steps.map((step, idx) => {
           const isDone = currentStepIdx >= idx;
           const isCurrent = currentStepIdx === idx;
           return (
             <div
               key={step.label}
-              className="flex flex-col items-center gap-1 flex-1 relative"
+              className="flex min-w-0 flex-col items-center gap-1 flex-1 relative"
             >
               <div
-                className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                   isCurrent
                     ? "bg-orange-600 text-white ring-4 ring-orange-100 shadow-md scale-110"
                     : isDone
@@ -120,7 +120,7 @@ export const LiveOrderTracker: React.FC = () => {
                 </span>
               </div>
               <span
-                className={`text-[10px] font-bold text-center ${
+                className={`text-[9px] sm:text-[10px] font-bold text-center leading-tight ${
                   isCurrent
                     ? "text-orange-600"
                     : isDone
@@ -136,19 +136,18 @@ export const LiveOrderTracker: React.FC = () => {
       </div>
 
       {/* Digital Token Hero Card with Laser Scan Effect */}
-      <div className="w-full bg-white rounded-2xl shadow-md border border-slate-100 p-6 flex flex-col items-center text-center relative overflow-hidden">
+      <div className="w-full bg-white rounded-2xl shadow-md border border-slate-100 p-4 sm:p-6 flex flex-col items-center text-center relative overflow-hidden">
         {/* Glow ambient accent */}
         <div className="absolute -top-12 -right-12 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl pointer-events-none"></div>
         <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
 
-        <div className="flex items-center justify-between w-full mb-2 flex-wrap gap-2">
+        <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between w-full mb-2">
           <span className="text-[11px] font-semibold bg-slate-100 text-slate-800 px-3 py-1 rounded-full flex items-center gap-1">
             <span className="material-symbols-outlined text-[14px] text-orange-600">
               verified
             </span>
             Verified Digital Pass
           </span>
-
           <div className="flex items-center gap-1.5">
             <span
               className={`text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1 border ${
@@ -272,7 +271,7 @@ export const LiveOrderTracker: React.FC = () => {
 
       {/* Cancel Order Action */}
       {canCancel && (
-        <div className="bg-white rounded-2xl p-4 border border-red-100 flex items-center justify-between">
+        <div className="bg-white rounded-2xl p-4 border border-red-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex flex-col">
             <span className="text-xs font-bold text-slate-800">
               Need to cancel order?
@@ -283,7 +282,7 @@ export const LiveOrderTracker: React.FC = () => {
           </div>
           <button
             onClick={() => updateOrderStatus(activeOrder.id, "Cancelled")}
-            className="px-4 py-2 rounded-xl text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+            className="self-start sm:self-auto px-4 py-2 rounded-xl text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 transition-colors shrink-0"
           >
             Cancel Order
           </button>

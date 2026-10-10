@@ -117,8 +117,8 @@ export const CustomerHome: React.FC = () => {
   return (
     <div className="flex flex-col w-full pb-32">
       {/* Sticky Search & Quick Filter Bar */}
-      <div className="sticky top-20 z-40 bg-white/95 backdrop-blur-md px-4 py-3 border-b border-slate-100 shadow-sm flex flex-col gap-2.5">
-        <div className="flex items-center gap-2 max-w-7xl mx-auto w-full">
+      <div className="sticky top-16 md:top-20 z-40 bg-white/95 backdrop-blur-md px-3 sm:px-4 py-2.5 sm:py-3 border-b border-slate-100 shadow-sm flex flex-col gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 max-w-7xl mx-auto w-full">
           <div className="relative flex-1 flex items-center group">
             <span className="material-symbols-outlined absolute left-3.5 text-slate-400 text-[22px] pointer-events-none group-focus-within:text-orange-600 transition-colors">
               search
@@ -225,7 +225,7 @@ export const CustomerHome: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto w-full px-4 pt-4 flex flex-col gap-5">
+      <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 pt-3 sm:pt-4 flex flex-col gap-4 sm:gap-5">
         {/* Real-time Kitchen Rush Insight Banner */}
         <div className="relative overflow-hidden bg-white rounded-2xl p-4 shadow-sm border border-emerald-100 flex items-center justify-between gap-3 hover:shadow-md transition-shadow">
           <div className="shimmer-layer opacity-30"></div>
@@ -426,17 +426,17 @@ export const CustomerHome: React.FC = () => {
 
       {/* Floating Bottom Cart Bar */}
       {cartCount > 0 && (
-        <div className="fixed bottom-4 left-4 right-4 z-40 max-w-2xl mx-auto">
-          <div className="bg-slate-900 text-white p-3 px-5 rounded-2xl shadow-2xl flex items-center justify-between border border-slate-800 anim-fade-in-up">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-orange-600 flex items-center justify-center text-white font-bold text-sm shadow-inner cart-wiggling">
+        <div className="fixed bottom-16 md:bottom-4 left-3 right-3 sm:left-4 sm:right-4 z-40 max-w-2xl mx-auto">
+          <div className="bg-slate-900 text-white p-2.5 sm:p-3 px-3 sm:px-5 rounded-2xl shadow-2xl flex items-center justify-between border border-slate-800 anim-fade-in-up gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-orange-600 flex items-center justify-center text-white font-bold text-sm shadow-inner cart-wiggling shrink-0">
                 {cartCount}
               </div>
-              <div className="flex flex-col">
-                <span className="text-xs text-slate-400 font-semibold uppercase">
-                  Pre-Order Basket Total
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] sm:text-xs text-slate-400 font-semibold uppercase truncate">
+                  Basket Total
                 </span>
-                <span className="font-extrabold text-lg text-white">
+                <span className="font-extrabold text-base sm:text-lg text-white">
                   ${cartTotal.toFixed(2)}
                 </span>
               </div>
@@ -444,10 +444,11 @@ export const CustomerHome: React.FC = () => {
 
             <button
               onClick={() => router.push("/cart")}
-              className="bg-orange-600 hover:bg-orange-500 text-white px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95"
+              className="bg-orange-600 hover:bg-orange-500 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition-all shadow-md active:scale-95 shrink-0 whitespace-nowrap"
             >
-              <span>Review & Select Pickup Slot</span>
-              <span className="material-symbols-outlined text-[18px]">
+              <span className="hidden sm:inline">Review & Select Slot</span>
+              <span className="sm:hidden">Checkout</span>
+              <span className="material-symbols-outlined text-[16px] sm:text-[18px]">
                 arrow_forward
               </span>
             </button>

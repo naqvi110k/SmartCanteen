@@ -18,18 +18,18 @@ export const CustomerPreferences: React.FC = () => {
     updatePreferences({ [field]: !preferences[field] });
 
   return (
-    <div className="max-w-3xl mx-auto w-full px-4 pt-6 pb-32 flex flex-col gap-6">
+    <div className="max-w-3xl mx-auto w-full px-3 sm:px-4 pt-3 sm:pt-4 pb-32 flex flex-col gap-4 sm:gap-6">
       <div>
-        <h1 className="font-headline text-2xl font-extrabold text-slate-900">
+        <h1 className="font-headline text-xl sm:text-2xl font-extrabold text-slate-900">
           Preferences
         </h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-xs sm:text-sm text-slate-500">
           Your choices are saved to your customer account.
         </p>
       </div>
 
-      <section className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
-        <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+      <section className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
+        <h2 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-wider">
           Dietary preferences
         </h2>
         <PreferenceToggle label="Vegetarian meals" description="Highlight vegetarian meals in the menu" checked={preferences.vegetarianOnly} onChange={() => toggle("vegetarianOnly")} />
@@ -38,8 +38,8 @@ export const CustomerPreferences: React.FC = () => {
         <PreferenceToggle label="Nut allergy warning" description="Warn when meals contain nuts or traces of nuts" checked={preferences.nutAllergyWarning} onChange={() => toggle("nutAllergyWarning")} />
       </section>
 
-      <section className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
-        <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+      <section className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
+        <h2 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-wider">
           Ordering preferences
         </h2>
         <label className="flex flex-col gap-2 text-xs font-bold text-slate-700">
@@ -52,8 +52,8 @@ export const CustomerPreferences: React.FC = () => {
         </label>
       </section>
 
-      <section className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
-        <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+      <section className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
+        <h2 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-wider">
           Notifications
         </h2>
         <PreferenceToggle label="Order ready alerts" description="Notify me when my order is ready for pickup" checked={preferences.notifyOnReady} onChange={() => toggle("notifyOnReady")} />
@@ -71,11 +71,11 @@ interface PreferenceToggleProps {
 }
 
 const PreferenceToggle: React.FC<PreferenceToggleProps> = ({ label, description, checked, onChange }) => (
-  <label className="flex items-center justify-between gap-4 py-2 border-b border-slate-100 last:border-0 cursor-pointer">
-    <span className="flex flex-col gap-1">
-      <span className="text-sm font-bold text-slate-900">{label}</span>
-      <span className="text-xs text-slate-500">{description}</span>
+  <label className="flex items-start sm:items-center justify-between gap-3 py-2 border-b border-slate-100 last:border-0 cursor-pointer">
+    <span className="flex flex-col gap-0.5">
+      <span className="text-xs sm:text-sm font-bold text-slate-900">{label}</span>
+      <span className="text-[11px] sm:text-xs text-slate-500">{description}</span>
     </span>
-    <input type="checkbox" checked={checked} onChange={onChange} className="w-5 h-5 accent-orange-600 rounded cursor-pointer shrink-0" />
+    <input type="checkbox" checked={checked} onChange={onChange} className="w-5 h-5 accent-orange-600 rounded cursor-pointer shrink-0 mt-0.5 sm:mt-0" />
   </label>
 );
