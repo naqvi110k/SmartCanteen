@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { Header } from "../components/Header";
+import { CustomerHome } from "../components/CustomerHome";
+import { useApp } from "./context/AppContext";
 
 /* ──────────── Data ──────────── */
 
@@ -153,6 +156,19 @@ const featureChips = [
 /* ──────────── Component ──────────── */
 
 export default function LandingPage() {
+  const { isAuthenticated, role } = useApp();
+
+  if (isAuthenticated && role === "customer") {
+    return (
+      <div className="min-h-screen bg-[#f8f9ff] flex flex-col font-sans">
+        <Header />
+        <main className="flex-1 pt-16 md:pt-20">
+          <CustomerHome />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-surface-alt font-[Inter] text-on-surface antialiased selection:bg-primary-fixed selection:text-on-primary-fixed">
       {/* ═══════════ HEADER ═══════════ */}
